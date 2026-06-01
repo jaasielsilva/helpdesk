@@ -1,0 +1,159 @@
+@if (carregando) {
+  <div class="dash-loading">
+    <div class="spinner-ring"></div>
+    <span class="text-xs uppercase font-bold tracking-wider text-slate-400 animate-pulse">Carregando painel operacional...</span>
+  </div>
+} @else {
+
+@if (authService.usuarioAtual?.perfil === 'SUPER_ADMIN') {
+  <p class="text-xs text-slate-500 mb-4 bg-slate-50 border border-slate-100 rounded-lg px-4 py-2">
+    Visão plataforma: KPIs agregam chamados de todos os tenants.
+  </p>
+} @else if (authService.usuarioAtual?.empresaNome) {
+  <p class="text-xs text-slate-500 mb-4 bg-slate-50 border border-slate-100 rounded-lg px-4 py-2">
+    Tenant: <strong>{{ authService.usuarioAtual?.empresaNome }}</strong>
+  </p>
+}
+
+<!-- KPIs -->
+<div class="kpi-grid">
+
+  <article class="kpi-card shadow-premium hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 bg-white border border-slate-100 rounded-2xl p-5 flex items-center gap-4">
+    <div class="kpi-icon bg-violet-50 text-violet-600 border border-violet-100/60 shadow-sm shadow-violet-100/50 flex items-center justify-center w-12 h-12 rounded-xl flex-shrink-0">
+      <svg viewBox="0 0 24 24" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    </div>
+    <div class="kpi-body min-w-0">
+      <span class="kpi-label text-slate-400 font-bold uppercase tracking-wider text-[10px] block">Total de chamados</span>
+      <strong class="kpi-value text-slate-800 text-3xl font-extrabold tracking-tight mt-0.5 block">{{ total }}</strong>
+    </div>
+  </article>
+
+  <article class="kpi-card shadow-premium hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 bg-white border border-slate-100 rounded-2xl p-5 flex items-center gap-4">
+    <div class="kpi-icon bg-blue-50 text-blue-600 border border-blue-100/60 shadow-sm shadow-blue-100/50 flex items-center justify-center w-12 h-12 rounded-xl flex-shrink-0">
+      <svg viewBox="0 0 24 24" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M12 11v4M12 17h.01M3 12a9 9 0 1018 0 9 9 0 00-18 0z"/></svg>
+    </div>
+    <div class="kpi-body min-w-0">
+      <span class="kpi-label text-slate-400 font-bold uppercase tracking-wider text-[10px] block">Em aberto</span>
+      <strong class="kpi-value text-slate-800 text-3xl font-extrabold tracking-tight mt-0.5 block">{{ abertos }}</strong>
+    </div>
+  </article>
+
+  <article class="kpi-card shadow-premium hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 bg-white border border-slate-100 rounded-2xl p-5 flex items-center gap-4">
+    <div class="kpi-icon bg-amber-50 text-amber-600 border border-amber-100/60 shadow-sm shadow-amber-100/50 flex items-center justify-center w-12 h-12 rounded-xl flex-shrink-0">
+      <svg viewBox="0 0 24 24" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    </div>
+    <div class="kpi-body min-w-0">
+      <span class="kpi-label text-slate-400 font-bold uppercase tracking-wider text-[10px] block">Em atendimento</span>
+      <strong class="kpi-value text-slate-800 text-3xl font-extrabold tracking-tight mt-0.5 block">{{ emAtendimento }}</strong>
+    </div>
+  </article>
+
+  <article class="kpi-card shadow-premium hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 bg-white border border-slate-100 rounded-2xl p-5 flex items-center gap-4">
+    <div class="kpi-icon bg-emerald-50 text-emerald-600 border border-emerald-100/60 shadow-sm shadow-emerald-100/50 flex items-center justify-center w-12 h-12 rounded-xl flex-shrink-0">
+      <svg viewBox="0 0 24 24" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    </div>
+    <div class="kpi-body min-w-0">
+      <span class="kpi-label text-slate-400 font-bold uppercase tracking-wider text-[10px] block">Taxa de resolução</span>
+      <strong class="kpi-value text-slate-800 text-3xl font-extrabold tracking-tight mt-0.5 block">
+        {{ taxaResolucao }}<small class="text-sm font-bold text-slate-400 ml-0.5">%</small>
+      </strong>
+    </div>
+  </article>
+
+</div>
+
+<!-- Charts row -->
+<div class="charts-row">
+
+  <!-- Barras por status -->
+  <div class="panel shadow-premium bg-white rounded-2xl border border-slate-100">
+    <div class="border-b border-slate-100 px-6 py-4">
+      <h2 class="text-base font-bold text-slate-800">Distribuição por status</h2>
+      <p class="text-xs text-slate-400 mt-1">Volume de chamados em cada etapa operacional</p>
+    </div>
+    <div class="bar-chart">
+      @for (bar of statusBars; track bar.label) {
+        <div class="bar-row">
+          <span class="bar-label">{{ bar.label }}</span>
+          <div class="bar-track">
+            <div class="bar-fill" [style.width.%]="bar.pct" [style.background]="bar.color"></div>
+          </div>
+          <span class="bar-count">{{ bar.count }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Linha por dia -->
+  <div class="panel shadow-premium bg-white rounded-2xl border border-slate-100">
+    <div class="border-b border-slate-100 px-6 py-4">
+      <h2 class="text-base font-bold text-slate-800">Volume de chamados diários</h2>
+      <p class="text-xs text-slate-400 mt-1">Últimos 7 dias de operações registradas</p>
+    </div>
+    <div class="line-chart">
+      <div class="line-bars">
+        @for (pt of weekPoints; track pt.label) {
+          <div class="line-col">
+            <span class="line-count">{{ pt.count }}</span>
+            <div class="line-bar-wrap">
+              <div class="line-bar-fill bg-gradient-to-t from-brand-purple to-brand-indigo" [style.height.%]="pt.pct || 2"></div>
+            </div>
+            <span class="line-day">{{ pt.label }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Recentes -->
+<div class="panel shadow-premium bg-white rounded-2xl border border-slate-100 p-6">
+  <div class="pb-4 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100">
+    <div>
+      <h2 class="text-base font-bold text-slate-800">Últimas ocorrências registradas</h2>
+      <p class="text-xs text-slate-400 mt-1">Os 5 chamados mais recentes para atendimento operacional</p>
+    </div>
+    <a class="btn-secondary px-4 py-2 text-xs flex items-center justify-center" routerLink="/chamados">Ver todos os chamados</a>
+  </div>
+
+  @if (recentes.length === 0) {
+    <div class="py-12 text-center text-slate-400 font-medium">Nenhum chamado registrado até o momento.</div>
+  } @else {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr class="bg-slate-50/50">
+            <th>ID</th>
+            <th>Título / Descrição</th>
+            <th>Solicitante</th>
+            <th>Status</th>
+            <th class="text-right">Criado em</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+          @for (c of recentes; track c.id) {
+            <tr class="hover:bg-slate-50/30 transition-colors duration-150">
+              <td class="td-id">#{{ c.id }}</td>
+              <td>
+                <span class="td-title text-slate-700 font-semibold">{{ c.titulo }}</span>
+                <span class="td-desc text-slate-400 text-xs mt-0.5 truncate block max-w-[320px]">{{ c.descricao }}</span>
+              </td>
+              <td class="font-medium text-slate-600">{{ c.usuarioNome }}</td>
+              <td>
+                <span class="badge" [class]="statusClass(c.status)">
+                  {{ statusLabel(c.status) }}
+                </span>
+              </td>
+              <td class="td-date text-right text-xs text-slate-400 font-medium">
+                {{ c.dataCriacao | date:'dd/MM/yy HH:mm' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+}

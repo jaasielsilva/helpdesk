@@ -1,0 +1,82 @@
+<div class="flex min-h-screen bg-slate-50">
+
+  <!-- Sidebar -->
+  <aside class="sidebar w-64 flex-shrink-0 flex flex-col h-screen sticky top-0 overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-[#1e1b4b] text-slate-300 border-r border-slate-900/60 shadow-xl z-20">
+
+    <!-- Brand -->
+    <a routerLink="/dashboard" class="flex items-center gap-3 px-5 py-5 border-b border-slate-900/60">
+      <span class="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-indigo to-brand-purple flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md shadow-brand-500/20">
+        HD
+      </span>
+      <div class="min-w-0">
+        <p class="text-white font-extrabold text-sm tracking-wide leading-tight">Helpdesk Pro</p>
+        <p class="text-slate-500 text-[10px] uppercase font-bold tracking-wider leading-tight mt-0.5">Central de chamados</p>
+      </div>
+    </a>
+
+    <!-- Nav -->
+    <nav class="sidebar-nav flex flex-col flex-1 min-h-0 overflow-y-auto px-3 py-4">
+      @for (group of menuGroups$ | async; track group.id; let first = $first) {
+        <section class="sidebar-group" [class.sidebar-group--first]="first">
+          <h2 class="sidebar-group-label">{{ group.label }}</h2>
+
+          <div class="sidebar-group-items">
+            @for (item of group.items; track item.id) {
+              <a [routerLink]="item.route"
+                 routerLinkActive="active-nav"
+                 class="sidebar-nav-link">
+                <span class="sidebar-nav-icon">
+                  <app-nav-icon [name]="item.icon" />
+                </span>
+                <span class="sidebar-nav-text">{{ item.label }}</span>
+              </a>
+            }
+          </div>
+        </section>
+      }
+    </nav>
+
+    <!-- User footer -->
+    <div class="px-4 py-4 border-t border-slate-900/60 flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-brand-indigo to-brand-purple flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-inner">
+        {{ ((usuario$ | async)?.usuario || 'A') | slice:0:1 | uppercase }}
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="text-white text-xs font-bold truncate">{{ (usuario$ | async)?.usuario || 'Admin' }}</p>
+        <p class="text-slate-500 text-[10px] font-semibold uppercase tracking-wider mt-0.5">
+          {{ (usuario$ | async)?.perfil || '' }}
+          @if ((usuario$ | async)?.empresaNome) {
+            <span class="normal-case tracking-normal text-slate-600"> · {{ (usuario$ | async)?.empresaNome }}</span>
+          }
+        </p>
+      </div>
+      <button type="button" (click)="logout()" title="Sair"
+        class="w-7 h-7 flex items-center justify-center rounded-md text-slate-500 hover:bg-rose-500/20 hover:text-rose-400 transition-all duration-200">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+        </svg>
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- Main -->
+  <div class="flex flex-col flex-1 min-w-0">
+
+    <!-- Topbar -->
+    <header class="h-14 flex items-center justify-between px-6 bg-white/80 backdrop-blur-md border-b border-slate-100 flex-shrink-0 sticky top-0 z-30">
+      <h1 class="text-sm font-bold text-slate-800 tracking-wide">{{ pageTitle$ | async }}</h1>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-slate-400 font-semibold hidden sm:block">
+          {{ agora | date:'EEEE, d MMM yyyy' }}
+        </span>
+      </div>
+    </header>
+
+    <!-- Page content -->
+    <main class="flex-1 p-6 overflow-auto">
+      <router-outlet />
+    </main>
+
+  </div>
+</div>

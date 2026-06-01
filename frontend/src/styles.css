@@ -1,0 +1,289 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design tokens (HP2 Premium Design System) ── */
+:root {
+  --primary: #7c3aed;
+  --primary-dark: #6d28d9;
+  --brand-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --success: #10b981;
+  --danger: #ef4444;
+  --border: #f1f5f9;
+  --muted: #64748b;
+  --text: #1e293b;
+  --surface: #ffffff;
+  --bg: #f8fafc;
+}
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  button, input, textarea, select { font: inherit; }
+
+  /* Outline só via teclado (Tab), não ao clicar com mouse */
+  :where(
+    a,
+    button,
+    summary,
+    [role='button'],
+    li,
+    [tabindex]:not([tabindex='-1'])
+  ):focus {
+    outline: none;
+  }
+
+  :where(
+    a,
+    button,
+    summary,
+    [role='button'],
+    li,
+    [tabindex]:not([tabindex='-1'])
+  ):focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  :where(a, button, summary, [role='button'], li) {
+    -webkit-tap-highlight-color: transparent;
+    caret-color: transparent;
+  }
+}
+
+@layer components {
+  /* ── Painéis e Cards Padronizados ── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(15, 23, 42, 0.02);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .panel-header {
+    border-b: 1px solid var(--border);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .panel-header h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+  }
+  .panel-header p {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 4px 0 0 0;
+  }
+
+  /* ── Botões de Alta Fidelidade ── */
+  .btn-primary {
+    background: var(--brand-gradient);
+    color: #ffffff;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(118, 75, 162, 0.2);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+  }
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(118, 75, 162, 0.35);
+  }
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+  }
+  .btn-primary:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .btn-secondary {
+    background: #f5f3ff;
+    color: #7c3aed;
+    border: 1px solid #ede9fe;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: #ede9fe;
+    color: #6d28d9;
+  }
+  .btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* ── Inputs e Formulários ── */
+  .input-field {
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--text);
+    background-color: #ffffff;
+    transition: all 0.2s ease;
+  }
+  .input-field:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+  }
+  .input-field::placeholder {
+    color: #94a3b8;
+  }
+
+  /* ── Tabelas Corporativas HP2 ── */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    text-align: left;
+  }
+  .data-table th {
+    background: #f8fafc;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  .data-table tbody tr {
+    transition: background-color 0.15s ease;
+  }
+  .data-table tbody tr:hover {
+    background-color: #f8fafc;
+  }
+
+  /* ── Badges de Status Glassmorphic ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    letter-spacing: 0.03em;
+    border: 1px solid transparent;
+  }
+  .badge-blue {
+    background: #eff6ff;
+    color: #1e40af;
+    border-color: #dbeafe;
+  }
+  .badge-yellow {
+    background: #fff7ed;
+    color: #c2410c;
+    border-color: #ffedd5;
+  }
+  .badge-green {
+    background: #f0fdf4;
+    color: #166534;
+    border-color: #dcfce7;
+  }
+  .badge-gray {
+    background: #f8fafc;
+    color: #475569;
+    border-color: #f1f5f9;
+  }
+  .badge-red {
+    background: #fef2f2;
+    color: #991b1b;
+    border-color: #fee2e2;
+  }
+}
+
+/* ── Toast (ngx-toastr) Clean & Redondo ── */
+.toast-container { max-width: 380px; }
+
+.toast {
+  border-radius: 16px !important;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  opacity: 0.98 !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  padding: 16px 20px 16px 54px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.toast-success {
+  background: rgba(240, 253, 244, 0.96) !important;
+  border: 1px solid rgba(34, 197, 94, 0.25) !important;
+  color: #14532d !important;
+}
+.toast-success .toast-title { color: #166534 !important; font-weight: 700 !important; }
+
+.toast-error {
+  background: rgba(254, 242, 242, 0.96) !important;
+  border: 1px solid rgba(239, 68, 68, 0.25) !important;
+  color: #7f1d1d !important;
+}
+.toast-error .toast-title { color: #991b1b !important; font-weight: 700 !important; }
+
+.toast-info {
+  background: rgba(239, 246, 255, 0.96) !important;
+  border: 1px solid rgba(59, 130, 246, 0.25) !important;
+  color: #1e3a8a !important;
+}
+.toast-info .toast-title { color: #1e40af !important; font-weight: 700 !important; }
+
+.toast-warning {
+  background: rgba(255, 251, 235, 0.96) !important;
+  border: 1px solid rgba(245, 158, 11, 0.25) !important;
+  color: #78350f !important;
+}
+.toast-warning .toast-title { color: #92400e !important; font-weight: 700 !important; }
+
+.toast-message { line-height: 1.5 !important; }
+.toast-close-button { color: var(--muted) !important; top: 12px !important; right: 12px !important; }
+.progress-bar { background: var(--primary) !important; height: 3px !important; }
+.toast-success .progress-bar { background: #10b981 !important; }
+.toast-error   .progress-bar { background: #ef4444 !important; }
+.toast-warning .progress-bar { background: #f59e0b !important; }
+
+/* ── Animações Globais ── */
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slideDown {
+  animation: slideDown 0.25s ease-out forwards;
+}

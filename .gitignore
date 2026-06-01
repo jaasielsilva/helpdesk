@@ -1,0 +1,68 @@
+# Arquivos de build
+target/
+build/
+dist/
+*.jar
+!release-artifacts/**/*.jar
+*.war
+*.ear
+*.zip
+
+# IDE
+.idea/
+.vscode/
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+*.iws
+*.iml
+*.ipr
+.nb-gradle/
+nbproject/
+
+# Node e Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/dist/
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+.m2/
+
+# Ambiente e configurações
+.env
+.env.local
+.env.*.local
+*.properties.local
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Editor
+*.sublime-project
+*.sublime-workspace
+
+# Misc
+.cache/
+.sass-cache/
+*.pid
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn.cmd

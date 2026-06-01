@@ -1,0 +1,193 @@
+<div class="login-container">
+  <!-- Painel Esquerdo - Branding -->
+  <div class="login-brand">
+    <div class="brand-content">
+      <div class="logo-wrapper">
+        <div class="logo">
+          <span class="logo-icon">🆘</span>
+        </div>
+        <h1 class="brand-title">Helpdesk Pro</h1>
+      </div>
+      <p class="brand-subtitle">Sistema de Gestão de Chamados Profissional</p>
+
+      <div class="features">
+        <div class="feature-item">
+          <span class="feature-icon">✓</span>
+          <span>Gestão Centralizada</span>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">✓</span>
+          <span>Suporte em Tempo Real</span>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">✓</span>
+          <span>Relatórios Avançados</span>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">✓</span>
+          <span>Segurança de Ponta</span>
+        </div>
+      </div>
+
+      <div class="brand-footer">
+        <p>Transforme seu suporte técnico</p>
+        <p class="version">v1.0.0 • 2026</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Painel Direito - Formulário -->
+  <div class="login-form-container">
+    <div class="form-wrapper">
+      <div class="form-header">
+        <h2>Bem-vindo de Volta</h2>
+        <p>Faça login para acessar seu painel</p>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="entrar()" class="login-form">
+        <!-- Campo Usuário -->
+        <div class="form-group">
+          <label for="usuario" class="form-label">
+            <span class="label-icon">👤</span>
+            Usuário
+          </label>
+          <div class="input-wrapper">
+            <input
+              id="usuario"
+              formControlName="usuario"
+              type="text"
+              class="form-input"
+              placeholder="admin"
+              [class.error]="form.get('usuario')?.invalid && form.get('usuario')?.touched"
+            />
+            <span class="input-icon">👤</span>
+          </div>
+          @if (form.get('usuario')?.invalid && form.get('usuario')?.touched) {
+            <span class="error-text">Usuário é obrigatório</span>
+          }
+        </div>
+
+        <!-- Campo Senha -->
+        <div class="form-group">
+          <label for="senha" class="form-label">
+            <span class="label-icon">🔐</span>
+            Senha
+          </label>
+          <div class="input-wrapper">
+            <input
+              id="senha"
+              formControlName="senha"
+              [type]="mostrarSenha ? 'text' : 'password'"
+              class="form-input"
+              placeholder="••••••••"
+              [class.error]="form.get('senha')?.invalid && form.get('senha')?.touched"
+            />
+            <button
+              type="button"
+              class="toggle-password"
+              (click)="mostrarSenha = !mostrarSenha"
+              tabindex="-1"
+            >
+              {{ mostrarSenha ? '👁️' : '🙈' }}
+            </button>
+          </div>
+          @if (form.get('senha')?.invalid && form.get('senha')?.touched) {
+            <span class="error-text">Senha é obrigatória</span>
+          }
+        </div>
+
+        @if (exigirEmpresaSlug) {
+          <div class="form-group">
+            <label for="empresaSlug" class="form-label">
+              <span class="label-icon">🏢</span>
+              Identificador da empresa
+            </label>
+            <div class="input-wrapper">
+              <input
+                id="empresaSlug"
+                formControlName="empresaSlug"
+                type="text"
+                class="form-input"
+                placeholder="demo"
+              />
+            </div>
+            <span class="error-text" style="color: #64748b; margin-top: 4px; display: block;">
+              Ex.: slug da empresa (demo, acme-corp)
+            </span>
+          </div>
+        }
+
+        <!-- Lembrar & Recuperar Senha -->
+        <div class="form-options">
+          <label class="remember-me">
+            <input type="checkbox" formControlName="lembrarMe" />
+            <span>Lembrar-me neste dispositivo</span>
+          </label>
+          <a href="#" class="forgot-password">Esqueceu a senha?</a>
+        </div>
+
+        <!-- Botão Entrar -->
+        <button
+          type="submit"
+          class="btn-login"
+          [disabled]="carregando || form.invalid"
+        >
+          @if (!carregando) {
+            <span>Entrar na Conta</span>
+          } @else {
+            <span class="loading-spinner">
+              <span class="spinner"></span> Processando...
+            </span>
+          }
+        </button>
+
+        <!-- Mensagem de Erro -->
+        @if (erro) {
+          <div class="error-message">
+            <span class="error-icon">⚠️</span>
+            <span>{{ erro }}</span>
+          </div>
+        }
+      </form>
+
+      <!-- Credenciais de Teste -->
+      <div class="demo-credentials">
+        <p class="demo-label">Credenciais de Demonstração:</p>
+        <div class="credentials-box">
+          <div class="cred-item">
+            <span class="cred-label">Super Admin:</span>
+            <code class="cred-value">superadmin / super&#64;123</code>
+          </div>
+          <div class="cred-item">
+            <span class="cred-label">Admin (demo):</span>
+            <code class="cred-value">admin / admin&#64;123</code>
+          </div>
+          <div class="cred-item">
+            <span class="cred-label">Suporte:</span>
+            <code class="cred-value">suporte / suporte&#64;123</code>
+          </div>
+          <div class="cred-item">
+            <span class="cred-label">User:</span>
+            <code class="cred-value">user / user&#64;123</code>
+          </div>
+          <div class="cred-item">
+            <span class="cred-label">Plataforma:</span>
+            <code class="cred-value">superadmin / super&#64;123</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="form-footer">
+        <p>© 2026 Helpdesk Pro. Todos os direitos reservados.</p>
+        <div class="footer-links">
+          <a href="#">Termos de Uso</a>
+          <span class="separator">•</span>
+          <a href="#">Política de Privacidade</a>
+          <span class="separator">•</span>
+          <a href="#">Suporte</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

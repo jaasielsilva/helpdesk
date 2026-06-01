@@ -1,0 +1,136 @@
+<div class="space-y-6 animate-fade-in">
+  <section class="panel bg-white border border-slate-100 rounded-2xl p-6 shadow-premium">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">Usuários</h2>
+        <p class="text-xs text-slate-500 mt-1">Gestão de equipe do tenant.</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        @if (isSuperAdmin) {
+          <select class="input-field w-auto min-w-[180px] py-2 text-sm" (change)="onFiltroEmpresaChange($event)">
+            <option value="">Todas as empresas</option>
+            @for (empresa of empresas; track empresa.id) {
+              <option [value]="empresa.id">{{ empresa.nome }}</option>
+            }
+          </select>
+        }
+        @if (podeCriar) {
+          <button type="button" class="btn-primary px-4 py-2.5 text-sm" (click)="abrirForm()">
+            + Novo usuário
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (carregando) {
+      <p class="text-sm text-slate-500 py-8 text-center">Carregando usuários...</p>
+    } @else if (usuarios.length === 0) {
+      <p class="text-sm text-slate-500 py-8 text-center">Nenhum usuário encontrado.</p>
+    } @else {
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Usuário</th>
+              <th>Nome</th>
+              <th>Perfil</th>
+              @if (isSuperAdmin) {
+                <th>Empresa</th>
+              }
+              <th>Status</th>
+              <th>Criado em</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (usuario of usuarios; track usuario.id) {
+              <tr>
+                <td>{{ usuario.usuario }}</td>
+                <td>{{ usuario.nome }}</td>
+                <td><span class="badge badge-blue">{{ perfilLabel(usuario.perfil) }}</span></td>
+                @if (isSuperAdmin) {
+                  <td>{{ usuario.empresaNome ?? '—' }}</td>
+                }
+                <td>
+                  <span class="badge" [class.badge-green]="usuario.ativo" [class.badge-gray]="!usuario.ativo">
+                    {{ usuario.ativo ? 'Ativo' : 'Inativo' }}
+                  </span>
+                </td>
+                <td>{{ usuario.dataCriacao | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td>
+                  @if (usuario.ativo && podeCriar) {
+                    <button type="button" class="btn-secondary px-3 py-1.5 text-xs text-rose-600" (click)="desativar(usuario)">
+                      Desativar
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (totalPaginas > 1) {
+        <nav class="mt-6 flex items-center justify-center gap-2" aria-label="Paginação">
+          <button type="button" class="btn-secondary px-3 py-1.5 text-xs" [disabled]="paginaAtual === 0" (click)="irParaPagina(paginaAtual - 1)">Anterior</button>
+          @for (pagina of paginas; track pagina) {
+            <button type="button" class="btn-secondary px-3 py-1.5 text-xs" [class.bg-violet-100]="pagina === paginaAtual" (click)="irParaPagina(pagina)">{{ pagina + 1 }}</button>
+          }
+          <button type="button" class="btn-secondary px-3 py-1.5 text-xs" [disabled]="paginaAtual >= totalPaginas - 1" (click)="irParaPagina(paginaAtual + 1)">Próximo</button>
+        </nav>
+      }
+    }
+  </section>
+</div>
+
+@if (mostrarForm) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" (click)="fecharForm()">
+    <div class="panel w-full max-w-lg p-6 bg-white" (click)="$event.stopPropagation()">
+      <h3 class="text-lg font-bold text-slate-800 mb-1">Novo usuário</h3>
+      <p class="text-xs text-slate-500 mb-5">Cadastre um membro da equipe.</p>
+
+      <form class="space-y-4" [formGroup]="form" (ngSubmit)="salvar()">
+        @if (isSuperAdmin) {
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Empresa</label>
+            <select formControlName="empresaId" class="input-field">
+              <option value="">Selecione...</option>
+              @for (empresa of empresas; track empresa.id) {
+                <option [value]="empresa.id">{{ empresa.nome }}</option>
+              }
+            </select>
+          </div>
+        }
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Usuário</label>
+          <input type="text" formControlName="usuario" class="input-field" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Senha</label>
+          <input type="password" formControlName="senha" class="input-field" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nome</label>
+          <input type="text" formControlName="nome" class="input-field" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Perfil</label>
+          <select formControlName="perfil" class="input-field">
+            @for (p of perfisTenant; track p) {
+              @if (isSuperAdmin || p !== 'ADMIN') {
+                <option [value]="p">{{ perfilLabel(p) }}</option>
+              }
+            }
+          </select>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button type="button" class="btn-secondary flex-1 py-2.5" (click)="fecharForm()">Cancelar</button>
+          <button type="submit" class="btn-primary flex-1 py-2.5" [disabled]="form.invalid || salvando">
+            {{ salvando ? 'Salvando...' : 'Criar usuário' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

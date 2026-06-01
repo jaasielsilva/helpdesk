@@ -1,0 +1,58 @@
+# Docker Build Ignore
+
+# Build artifacts
+target/
+build/
+dist/
+
+# IDE
+.idea/
+.vscode/
+.settings/
+.project
+.classpath
+*.iml
+*.iws
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Documentation
+*.md
+docs/
+
+# Tests
+src/test/
+*.test.js
+
+# Node
+frontend/node_modules/
+frontend/.angular/
+npm-debug.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.swp
+*.swo
+~*
+.cache/
+.sass-cache/
