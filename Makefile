@@ -1,6 +1,6 @@
 # Makefile - Helpdesk Build & Development
 
-.PHONY: help build dev prod test clean install run lint format jwt-secret
+.PHONY: help build dev prod test clean install run lint format jwt-secret release
 
 help:
 	@echo "📋 Helpdesk - Comandos Disponíveis"
@@ -11,6 +11,7 @@ help:
 	@echo "🔨 Build:"
 	@echo "  make build         - Compilar projeto (DEV)"
 	@echo "  make build-prod    - Compilar para PRODUÇÃO"
+	@echo "  make release       - Build JAR v1.x + checksum em release-artifacts/"
 	@echo ""
 	@echo "🚀 Execução:"
 	@echo "  make dev           - Rodar em DESENVOLVIMENTO"
@@ -43,7 +44,10 @@ dev:
 
 prod:
 	@echo "🚀 Iniciando em PRODUÇÃO..."
-	@if [ -f scripts/prod.sh ]; then bash scripts/prod.sh; else java -jar target/helpdesk-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod; fi
+	@if [ -f scripts/prod.sh ]; then bash scripts/prod.sh; else java -jar release-artifacts/v1.0.0/helpdesk-1.0.0.jar --spring.profiles.active=prod; fi
+
+release:
+	@powershell -ExecutionPolicy Bypass -File scripts/build-release.ps1 -SkipTests
 
 jwt-secret:
 	@powershell -ExecutionPolicy Bypass -File scripts/generate-jwt-secret.ps1
