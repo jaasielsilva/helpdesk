@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.jaasielsilva.helpdesk.enums.PerfilUsuario;
-import com.jaasielsilva.helpdesk.model.Empresa;
 import com.jaasielsilva.helpdesk.model.Chamado;
 import com.jaasielsilva.helpdesk.model.Empresa;
 import com.jaasielsilva.helpdesk.model.Usuario;

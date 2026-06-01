@@ -1,127 +1,296 @@
-# 🛠️ Skill de Padronização: Criar Novo Módulo (Angular + HP2)
+# Skill de Padronizacao: Criar Novo Modulo (Angular + Spring Boot)
 
-Esta "Skill" serve como gabarito arquitetural e visual para a criação de qualquer novo módulo/funcionalidade no frontend do **Helpdesk Pro**. Ela garante consistência absoluta no código Typescript, marcação HTML (HP2 Design System), estilos CSS e integração com serviços do backend Spring Boot.
-
----
-
-## 📁 1. Estrutura de Pastas Padrão
-
-Todo novo módulo de negócio deve ser criado dentro do diretório `/src/app/features/` usando componentes autônomos (*Standalone Components*).
-
-```
-src/app/features/novo-modulo/
-├── novo-modulo.component.ts      # Lógica, reatividade, controle de estado e chamadas à API
-├── novo-modulo.component.html    # Marcação estruturada seguindo as classes semânticas HP2
-└── novo-modulo.component.css     # Estilos e transições particulares da tela (se houver)
-```
+Este guia define o padrao arquitetural para criacao de qualquer novo modulo no **Helpdesk Pro**.
+O modulo **Chamados** e a referencia oficial -- siga a mesma estrutura, nomenclatura e padroes.
 
 ---
 
-## ☕ 2. Gabarito de Código: Typescript (`novo-modulo.component.ts`)
+## 1. Estrutura de Arquivos
 
-A lógica deve gerenciar de forma limpa os estados de carregamento, validações de formulário reativo e exibição de feedbacks visuais de sucesso/erro via `NotificationService`.
+### Backend (Spring Boot)
+
+```
+src/main/java/com/jaasielsilva/helpdesk/
+├── controller/NovoController.java        # REST controller com @PreAuthorize
+├── dto/novo/
+│   ├── NovoCreateRequest.java            # Java record para criacao
+│   ├── NovoUpdateRequest.java            # Java record para edicao
+│   └── NovoResponse.java                 # Java record com static from(Model)
+├── model/Novo.java                       # Entidade JPA
+├── repository/NovoRepository.java        # Spring Data JPA
+├── service/
+│   ├── NovoService.java                  # Interface
+│   └── NovoServiceImpl.java             # Implementacao com @Transactional
+```
+
+### Frontend (Angular Standalone)
+
+```
+frontend/src/app/
+├── core/
+│   ├── models/novo.ts                    # Interfaces + tipos + labels
+│   └── services/novo.service.ts          # Service com HttpClient + Observable
+├── features/novo/
+│   ├── novo.component.ts                 # Component standalone com inject()
+│   ├── novo.component.html               # Template com @if/@for (novo control flow)
+│   └── novo.component.css                # Estilos locais (minimo)
+```
+
+---
+
+## 2. Backend: Padroes
+
+### DTO Response com static from()
+
+Todo DTO de resposta deve ter um factory method `from()` para conversao da entidade:
+
+```java
+public record NovoResponse(
+    Long id,
+    String titulo,
+    String descricao,
+    LocalDateTime dataCriacao
+) {
+    public static NovoResponse from(Novo novo) {
+        return new NovoResponse(
+            novo.getId(),
+            novo.getTitulo(),
+            novo.getDescricao(),
+            novo.getDataCriacao()
+        );
+    }
+}
+```
+
+### Controller com PreAuthorize
+
+```java
+@RestController
+@RequestMapping("/api/novos")
+public class NovoController {
+
+    private final NovoService service;
+
+    public NovoController(NovoService service) {
+        this.service = service;
+    }
+
+    @PostMapping
+    @PreAuthorize("@permService.can(authentication, T(...ModuloSistema).NOVO, T(...PermissaoAcao).CRIAR)")
+    public ResponseEntity<ApiResponse<NovoResponse>> criar(
+            @Valid @RequestBody NovoCreateRequest request, Authentication auth) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(ApiResponse.sucesso("Criado com sucesso", service.criar(request, auth)));
+    }
+
+    @GetMapping
+    @PreAuthorize("@permService.can(authentication, T(...ModuloSistema).NOVO, T(...PermissaoAcao).VISUALIZAR)")
+    public ResponseEntity<ApiResponse<Page<NovoResponse>>> listar(Pageable pageable, Authentication auth) {
+        return ResponseEntity.ok(ApiResponse.sucesso("Listados", service.listar(pageable, auth)));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("@permService.can(authentication, T(...ModuloSistema).NOVO, T(...PermissaoAcao).EDITAR)")
+    public ResponseEntity<ApiResponse<NovoResponse>> atualizar(
+            @PathVariable Long id, @Valid @RequestBody NovoUpdateRequest request, Authentication auth) {
+        return ResponseEntity.ok(ApiResponse.sucesso("Atualizado", service.atualizar(id, request, auth)));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("@permService.can(authentication, T(...ModuloSistema).NOVO, T(...PermissaoAcao).EXCLUIR)")
+    public ResponseEntity<ApiResponse<Void>> deletar(@PathVariable Long id, Authentication auth) {
+        service.deletar(id, auth);
+        return ResponseEntity.ok(ApiResponse.sucesso("Deletado"));
+    }
+}
+```
+
+### Service com Tenant Isolation
+
+```java
+@Service
+@Transactional
+public class NovoServiceImpl implements NovoService {
+
+    // Constructor injection (sem @Autowired)
+    private final NovoRepository repository;
+    private final TenantAccessService tenantAccessService;
+
+    public NovoServiceImpl(NovoRepository repository, TenantAccessService tenantAccessService) {
+        this.repository = repository;
+        this.tenantAccessService = tenantAccessService;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<NovoResponse> listar(Pageable pageable, Authentication auth) {
+        UsuarioAutenticado autenticado = UsuarioDetailsService.requireUsuarioAutenticado(auth);
+        if (autenticado.isSuperAdmin()) {
+            return repository.findAllActive(pageable).map(NovoResponse::from);
+        }
+        Long empresaId = tenantAccessService.requireEmpresaId();
+        return repository.findAllActiveByEmpresa(empresaId, pageable).map(NovoResponse::from);
+    }
+}
+```
+
+---
+
+## 3. Frontend: Model (`core/models/novo.ts`)
 
 ```typescript
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { NotificationService } from '../../core/services/notification.service';
-import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
-
-// Interfaces locais de dados (conforme os DTOs do backend)
-interface ElementoItem {
+export interface Novo {
   id: number;
   titulo: string;
   descricao: string;
-  status: string;
   dataCriacao: string;
 }
 
-@Component({
-  selector: 'app-novo-modulo',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
-  templateUrl: './novo-modulo.component.html',
-  styleUrls: ['./novo-modulo.component.css']
-})
-export class NovoModuloComponent implements OnInit {
-  // Controle de estados da UI
-  carregando = false;
-  salvando = false;
-  
-  // Estruturas de dados
-  elementos: ElementoItem[] = [];
-  form!: FormGroup;
+export interface CriarNovoRequest {
+  titulo: string;
+  descricao: string;
+}
 
-  constructor(
-    private fb: FormBuilder,
-    private notification: NotificationService,
-    private http: HttpClient
-  ) {}
+export interface AtualizarNovoRequest {
+  titulo?: string;
+  descricao?: string;
+}
+```
 
-  ngOnInit(): void {
-    this.inicializarFormulario();
-    this.carregarDados();
+**Importante:** `PageResponse` e compartilhado -- importe de `core/models/page-response`:
+
+```typescript
+import { PageResponse } from '../models/page-response';
+```
+
+---
+
+## 4. Frontend: Service (`core/services/novo.service.ts`)
+
+Padrao: `inject()` para DI, `Observable` + `map` para extrair `dados` do `ApiResponse`:
+
+```typescript
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable, map } from 'rxjs';
+
+import { AtualizarNovoRequest, CriarNovoRequest, Novo } from '../models/novo';
+import { PageResponse } from '../models/page-response';
+
+@Injectable({ providedIn: 'root' })
+export class NovoService {
+  private readonly http = inject(HttpClient);
+
+  listar(page = 0, size = 10): Observable<PageResponse<Novo>> {
+    const params = new HttpParams()
+      .set('page', page).set('size', size).set('sort', 'dataCriacao,desc');
+    return this.http.get<{ dados: PageResponse<Novo> }>('/api/novos', { params }).pipe(
+      map(res => res.dados)
+    );
   }
 
-  /**
-   * Inicializa o formulário reativo com validações completas
-   */
-  private inicializarFormulario(): void {
-    this.form = this.fb.group({
-      titulo: ['', [Validators.required, Validators.minLength(5)]],
-      descricao: ['', [Validators.required, Validators.minLength(10)]]
+  criar(request: CriarNovoRequest): Observable<Novo> {
+    return this.http.post<{ dados: Novo }>('/api/novos', request).pipe(map(res => res.dados));
+  }
+
+  atualizar(id: number, request: AtualizarNovoRequest): Observable<Novo> {
+    return this.http.put<{ dados: Novo }>(`/api/novos/${id}`, request).pipe(map(res => res.dados));
+  }
+
+  deletar(id: number): Observable<void> {
+    return this.http.delete<{ dados: void }>(`/api/novos/${id}`).pipe(map(() => undefined));
+  }
+}
+```
+
+---
+
+## 5. Frontend: Component (`features/novo/novo.component.ts`)
+
+Padrao: `inject()`, `formBuilder.nonNullable.group()`, componentes compartilhados:
+
+```typescript
+import { DatePipe } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+
+import { EmptyStateComponent } from '../../core/components/empty-state.component';
+import { PaginationComponent } from '../../core/components/pagination.component';
+import { Novo } from '../../core/models/novo';
+import { PageResponse } from '../../core/models/page-response';
+import { AuthService } from '../../core/services/auth.service';
+import { NovoService } from '../../core/services/novo.service';
+import { NotificationService } from '../../core/services/notification.service';
+import { PermissionService } from '../../core/services/permission.service';
+
+@Component({
+  selector: 'app-novo',
+  standalone: true,
+  imports: [DatePipe, ReactiveFormsModule, PaginationComponent, EmptyStateComponent],
+  templateUrl: './novo.component.html',
+  styleUrl: './novo.component.css'
+})
+export class NovoComponent implements OnInit {
+  private readonly novoService = inject(NovoService);
+  private readonly authService = inject(AuthService);
+  private readonly notificationService = inject(NotificationService);
+  private readonly permissionService = inject(PermissionService);
+  private readonly formBuilder = inject(FormBuilder);
+
+  itens: Novo[] = [];
+  carregando = true;
+  salvando = false;
+
+  paginaAtual = 0;
+  totalPaginas = 0;
+  totalElementos = 0;
+  readonly tamanhoPagina = 10;
+
+  get podeCriar(): boolean {
+    const perfil = this.authService.usuarioAtual?.perfil ?? 'USER';
+    return this.permissionService.can(perfil, 'NOVO_MODULO', 'CRIAR');
+  }
+
+  readonly form = this.formBuilder.nonNullable.group({
+    titulo: ['', [Validators.required, Validators.minLength(3)]],
+    descricao: ['', [Validators.required, Validators.minLength(10)]]
+  });
+
+  ngOnInit(): void {
+    this.carregar();
+  }
+
+  salvar(): void {
+    if (this.form.invalid || this.salvando) {
+      this.notificationService.warning('Preencha todos os campos corretamente');
+      return;
+    }
+    this.salvando = true;
+    this.novoService.criar(this.form.getRawValue()).subscribe({
+      next: () => {
+        this.form.reset();
+        this.salvando = false;
+        this.notificationService.success('Registro criado com sucesso!');
+        this.carregar(0);
+      },
+      error: () => { this.salvando = false; }
     });
   }
 
-  /**
-   * Carrega os registros do backend controlando o estado de carregamento
-   */
-  async carregarDados(): Promise<void> {
+  carregar(pagina = 0): void {
     this.carregando = true;
-    try {
-      // Ajustar URL para o endpoint correspondente do backend Spring Boot
-      const resposta = await firstValueFrom(
-        this.http.get<any>('/api/novo-modulo-endpoint')
-      );
-      this.elementos = resposta.dados || resposta;
-    } catch (erro) {
-      // O interceptor global trata a maioria dos erros, mas tratamentos específicos vão aqui
-      console.error('Erro ao buscar dados:', erro);
-    } finally {
-      this.carregando = false;
-    }
+    this.novoService.listar(pagina, this.tamanhoPagina).subscribe({
+      next: (page: PageResponse<Novo>) => {
+        this.itens = page.content;
+        this.paginaAtual = page.page.number;
+        this.totalPaginas = page.page.totalPages;
+        this.totalElementos = page.page.totalElements;
+        this.carregando = false;
+      },
+      error: () => { this.carregando = false; }
+    });
   }
 
-  /**
-   * Envia o formulário validando os campos e exibindo Toasts de feedback
-   */
-  async salvar(): Promise<void> {
-    if (this.form.invalid) {
-      this.notification.warning('Por favor, preencha todos os campos obrigatórios corretamente.');
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.salvando = true;
-    try {
-      const payload = this.form.value;
-      await firstValueFrom(
-        this.http.post('/api/novo-modulo-endpoint', payload)
-      );
-
-      this.notification.success('Registro criado com sucesso!', '🎉 Sucesso');
-      this.form.reset();
-      this.carregarDados(); // Recarrega a listagem
-    } catch (erro) {
-      console.error('Erro ao salvar:', erro);
-    } finally {
-      this.salvando = false;
-    }
-  }
-
-  // Helpers auxiliares para validação no HTML
   campoInvalido(nomeCampo: string): boolean {
     const campo = this.form.get(nomeCampo);
     return !!(campo && campo.invalid && (campo.dirty || campo.touched));
@@ -131,222 +300,111 @@ export class NovoModuloComponent implements OnInit {
 
 ---
 
-## 🎨 3. Gabarito de Código: HTML (`novo-modulo.component.html`)
+## 6. Frontend: Template (`features/novo/novo.component.html`)
 
-O HTML deve estruturar a tela usando a arquitetura de **Grades Fluidas**, **Painéis com Sombras Premium**, **Inputs Validados** e **Tabelas Elegantes** baseadas no HP2 Design System.
+Usar **novo control flow** (`@if`, `@for`) e componentes compartilhados (`<app-pagination>`, `<app-empty-state>`):
 
 ```html
-<!-- Grid do Layout de Negócio (Esquerda: Formulário, Direita: Listagem) -->
-<div class="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
+<div class="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start animate-fade-in">
 
-  <!-- PAINEL ESQUERDO: Formulário de Registro -->
-  <section class="panel p-6 rounded-2xl bg-white border border-slate-100/80 shadow-premium">
-    <div class="border-b border-slate-100 pb-4 mb-5">
-      <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-        <span>🚀</span> Novo Registro
-      </h2>
-      <p class="text-xs text-slate-500 mt-1">Crie um novo item operacional na fila do helpdesk.</p>
-    </div>
-
-    <form [formGroup]="form" (ngSubmit)="salvar()" class="space-y-4">
-      
-      <!-- Campo 1: Título -->
-      <div>
-        <label for="titulo" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-          Título do Item <span class="text-rose-500">*</span>
-        </label>
-        <div class="relative">
-          <span class="absolute left-4 top-3.5 text-slate-400">📝</span>
-          <input 
-            id="titulo" 
-            type="text" 
-            formControlName="titulo"
-            class="w-full pl-11 pr-4 py-3 rounded-lg border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-opacity-20"
-            [class.border-slate-200]="!campoInvalido('titulo')"
-            [class.border-rose-500]="campoInvalido('titulo')"
-            [class.focus:ring-brand-500]="!campoInvalido('titulo')"
-            [class.focus:ring-rose-500]="campoInvalido('titulo')"
-            [class.focus:border-brand-500]="!campoInvalido('titulo')"
-            [class.focus:border-rose-500]="campoInvalido('titulo')"
-            placeholder="Ex: Instalação de software corporativo"
-          />
-        </div>
-        <!-- Feedback de Erro Dinâmico -->
-        <div *ngIf="campoInvalido('titulo')" class="text-xs text-rose-500 mt-1.5 flex items-center gap-1 animate-slideDown">
-          <span>⚠️</span> O título é obrigatório (mín. 5 caracteres).
-        </div>
-      </div>
-
-      <!-- Campo 2: Descrição -->
-      <div>
-        <label for="descricao" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-          Descrição Detalhada <span class="text-rose-500">*</span>
-        </label>
-        <textarea 
-          id="descricao" 
-          formControlName="descricao" 
-          rows="4"
-          class="w-full px-4 py-3 rounded-lg border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-opacity-20"
-          [class.border-slate-200]="!campoInvalido('descricao')"
-          [class.border-rose-500]="campoInvalido('descricao')"
-          [class.focus:ring-brand-500]="!campoInvalido('descricao')"
-          [class.focus:ring-rose-500]="campoInvalido('descricao')"
-          [class.focus:border-brand-500]="!campoInvalido('descricao')"
-          [class.focus:border-rose-500]="campoInvalido('descricao')"
-          placeholder="Descreva detalhadamente a necessidade do negócio..."
-        ></textarea>
-        <!-- Feedback de Erro Dinâmico -->
-        <div *ngIf="campoInvalido('descricao')" class="text-xs text-rose-500 mt-1.5 flex items-center gap-1 animate-slideDown">
-          <span>⚠️</span> A descrição é obrigatória (mín. 10 caracteres).
-        </div>
-      </div>
-
-      <!-- Botão de Ação Primário com Estado de Carregamento -->
-      <button 
-        type="submit" 
-        [disabled]="form.invalid || salvando"
-        class="w-full btn-primary py-3.5 flex items-center justify-center gap-2 text-sm font-semibold rounded-lg transition-all"
-      >
-        <span *ngIf="!salvando" class="flex items-center gap-2">
-          <span>💾</span> Salvar Registro
-        </span>
-        <span *ngIf="salvando" class="flex items-center gap-2">
-          <span class="loading-spinner w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-          Processando...
-        </span>
-      </button>
-    </form>
+  <!-- PAINEL ESQUERDO: Formulario -->
+  <section class="panel bg-white border border-slate-100 rounded-2xl p-6 shadow-premium">
+    <!-- ...cabecalho + form (ver Chamados como referencia)... -->
   </section>
 
-  <!-- PAINEL DIREITO: Tabela / Visualização dos Dados -->
-  <section class="panel p-6 rounded-2xl bg-white border border-slate-100/80 shadow-premium">
-    
-    <!-- Cabeçalho do Painel -->
-    <div class="border-b border-slate-100 pb-4 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div>
-        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <span>📋</span> Fila de Operações
-        </h2>
-        <p class="text-xs text-slate-500 mt-1">Acompanhamento dos registros criados em tempo real.</p>
+  <!-- PAINEL DIREITO: Listagem -->
+  <section class="panel bg-white border border-slate-100 rounded-2xl p-6 shadow-premium">
+    <!-- ...cabecalho... -->
+
+    @if (carregando) {
+      <div class="py-16 flex flex-col items-center justify-center gap-3 text-slate-400">
+        <span class="loading-spinner w-8 h-8 border-3 border-slate-200 border-t-brand-500 rounded-full animate-spin"></span>
+        <span class="text-xs font-semibold uppercase tracking-wider">Carregando...</span>
       </div>
-      <button (click)="carregarDados()" class="btn-secondary px-4 py-2 text-xs flex items-center gap-2 rounded-lg">
-        <span>🔄</span> Atualizar
-      </button>
-    </div>
+    } @else if (itens.length === 0) {
+      <app-empty-state
+        icone="📂"
+        titulo="Nenhum registro encontrado."
+        descricao="Use o formulario ao lado para criar o primeiro registro."
+      />
+    } @else {
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr class="bg-slate-50/50">
+              <th>ID</th>
+              <th>Titulo</th>
+              <th class="text-right">Criado em</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+            @for (item of itens; track item.id) {
+              <tr class="hover:bg-slate-50/30 transition-colors duration-150">
+                <td class="font-bold text-slate-400 text-xs w-16">#{{ item.id }}</td>
+                <td>
+                  <strong class="text-slate-700 font-semibold block text-sm">{{ item.titulo }}</strong>
+                  <p class="text-xs text-slate-400 mt-0.5 max-w-[420px] truncate block">{{ item.descricao }}</p>
+                </td>
+                <td class="text-right text-xs text-slate-400 font-medium w-40">
+                  {{ item.dataCriacao | date:'dd/MM/yyyy HH:mm' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
 
-    <!-- Estado: Carregando -->
-    <div *ngIf="carregando" class="py-12 flex flex-col items-center justify-center gap-3 text-slate-400">
-      <span class="loading-spinner w-8 h-8 border-3 border-slate-200 border-t-brand-500 rounded-full animate-spin"></span>
-      <span class="text-xs font-semibold uppercase tracking-wider">Buscando dados da nuvem...</span>
-    </div>
-
-    <!-- Estado: Sem Registros -->
-    <div *ngIf="!carregando && elementos.length === 0" class="py-16 text-center text-slate-400">
-      <span class="text-4xl block mb-3">📂</span>
-      <p class="text-sm font-medium">Nenhum registro encontrado.</p>
-      <p class="text-xs mt-1">Utilize o formulário ao lado para cadastrar seu primeiro registro.</p>
-    </div>
-
-    <!-- Tabela de Dados Padronizada (Zebra & Hover) -->
-    <div *ngIf="!carregando && elementos.length > 0" class="overflow-x-auto">
-      <table class="data-table w-full text-left border-collapse text-sm">
-        <thead>
-          <tr class="border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50 rounded-t-lg">
-            <th class="py-4 px-4">#</th>
-            <th class="py-4 px-4">Título</th>
-            <th class="py-4 px-4 text-center">Status</th>
-            <th class="py-4 px-4 text-right">Criado em</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-50">
-          <tr *ngFor="let item of elementos; trackBy: item.id" class="hover:bg-slate-50/40 transition-colors">
-            <!-- ID com ênfase menor -->
-            <td class="py-4 px-4 font-bold text-slate-400 text-xs">#{{ item.id }}</td>
-            
-            <!-- Conteúdo Principal -->
-            <td class="py-4 px-4">
-              <span class="block font-semibold text-slate-700 text-sm">{{ item.titulo }}</span>
-              <span class="block text-xs text-slate-500 mt-0.5 truncate max-w-[280px]">{{ item.descricao }}</span>
-            </td>
-            
-            <!-- Badges Glassmorphic Estilizados -->
-            <td class="py-4 px-4 text-center">
-              <span 
-                class="badge" 
-                [class.badge-blue]="item.status === 'ABERTO'"
-                [class.badge-yellow]="item.status === 'EM_ATENDIMENTO'"
-                [class.badge-green]="item.status === 'RESOLVIDO'"
-              >
-                {{ item.status }}
-              </span>
-            </td>
-            
-            <!-- Data Formatada -->
-            <td class="py-4 px-4 text-right text-xs text-slate-400 font-medium">
-              {{ item.dataCriacao | date:'dd/MM/yyyy HH:mm' }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
+      <app-pagination
+        [paginaAtual]="paginaAtual"
+        [totalPaginas]="totalPaginas"
+        (irParaPagina)="carregar($event)"
+      />
+    }
   </section>
 </div>
 ```
 
 ---
 
-## 🔮 4. Gabarito de Código: Estilos Específicos (`novo-modulo.component.css`)
+## 7. Componentes Compartilhados
 
-O CSS local do componente deve focar estritamente em animações de transição local ou pequenos layouts de grade.
+### PaginationComponent (`core/components/pagination.component.ts`)
 
-```css
-/* Animação suave para o slide down do erro de validação */
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+Inputs: `paginaAtual`, `totalPaginas`. Output: `irParaPagina` (EventEmitter).
+Ja inclui CSS premium inline.
 
-.animate-slideDown {
-  animation: slideDown 0.2s ease-out forwards;
-}
+### EmptyStateComponent (`core/components/empty-state.component.ts`)
 
-/* Garante o círculo perfeito no spinner */
-.loading-spinner {
-  display: inline-block;
-}
-```
+Inputs: `icone`, `titulo`, `descricao`.
+
+### PageResponse (`core/models/page-response.ts`)
+
+Tipo generico compartilhado para respostas paginadas do Spring Boot.
 
 ---
 
-## 🚀 5. Checklist de Integração de Rotas
+## 8. Checklist de Integracao
 
-Sempre que concluir a criação dos arquivos do módulo, insira-o no arquivo `/src/app/app.routes.ts` definindo o título da página:
-
-1. Importe o componente no topo:
-   ```typescript
-   import { NovoModuloComponent } from './features/novo-modulo/novo-modulo.component';
-   ```
-2. Adicione nas rotas filhas do `AppShellComponent`:
-   ```typescript
-   { 
-     path: 'nome-da-rota', 
-     component: NovoModuloComponent, 
-     data: { title: 'Título que Aparecerá no Topbar' } 
-   }
-   ```
-3. Atualize os links no menu lateral (`app-shell.component.html`) utilizando a classe ativa configurada:
-   ```html
-   <a routerLink="/nome-da-rota" routerLinkActive="bg-brand-50 text-brand-700 border-l-4 border-brand-purple" ...>
-   ```
+1. Criar os arquivos backend + frontend seguindo os padroes acima
+2. Adicionar `NovoResponse.from()` como factory method no DTO
+3. Registrar a rota em `app.routes.ts` dentro do children do AppShell
+4. Adicionar o modulo em `ModuloSistema.java` (enum backend)
+5. Adicionar permissoes em `MatrizPermissoes.java` (PERMISSION_MATRIX)
+6. Adicionar o item de menu em `menu.config.ts` e `route-permissions.config.ts`
+7. Adicionar a permissao no `permissions.config.ts` frontend
 
 ---
 
-> [!NOTE]  
-> Ao ler este arquivo corporativo com a opção `IsSkillFile: true` habilitada, você ou qualquer outro agente de IA podem gerar novas páginas que utilizam **100% da identidade HP2 de forma automatizada e sem erros**.
+## 9. Modulo de Referencia
+
+O modulo **Chamados** e o modelo definitivo. Arquivos de referencia:
+
+| Camada | Arquivo |
+|--------|---------|
+| Controller | `controller/ChamadoController.java` |
+| Service Impl | `service/ChamadoServiceImpl.java` |
+| DTO Response | `dto/chamado/ChamadoResponse.java` |
+| Frontend Model | `core/models/chamado.ts` |
+| Frontend Service | `core/services/chamado.service.ts` |
+| Frontend Component | `features/chamados/chamados.component.ts` |
+| Frontend Template | `features/chamados/chamados.component.html` |

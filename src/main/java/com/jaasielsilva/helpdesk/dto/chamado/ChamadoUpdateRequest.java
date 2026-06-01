@@ -1,6 +1,7 @@
 package com.jaasielsilva.helpdesk.dto.chamado;
 
 import jakarta.validation.constraints.Size;
+import com.jaasielsilva.helpdesk.enums.PrioridadeChamado;
 import com.jaasielsilva.helpdesk.enums.StatusChamado;
 
 public record ChamadoUpdateRequest(
@@ -11,6 +12,8 @@ public record ChamadoUpdateRequest(
     String descricao,
 
     StatusChamado status,
+
+    PrioridadeChamado prioridade,
 
     Long usuarioAtribuidoId
 ) {

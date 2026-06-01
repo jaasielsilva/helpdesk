@@ -13,9 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.jaasielsilva.helpdesk.dto.usuario.CreateUsuarioRequest;
 import com.jaasielsilva.helpdesk.dto.usuario.UpdateUsuarioRequest;
 import com.jaasielsilva.helpdesk.dto.usuario.UsuarioResponse;
-import com.jaasielsilva.helpdesk.enums.ModuloSistema;
 import com.jaasielsilva.helpdesk.enums.PerfilUsuario;
-import com.jaasielsilva.helpdesk.enums.PermissaoAcao;
 import com.jaasielsilva.helpdesk.exception.ConflictException;
 import com.jaasielsilva.helpdesk.model.Empresa;
 import com.jaasielsilva.helpdesk.model.Usuario;
@@ -34,19 +32,16 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final EmpresaRepository empresaRepository;
-    private final PermissaoService permissaoService;
     private final TenantAccessService tenantAccessService;
     private final PasswordEncoder passwordEncoder;
 
     public UsuarioServiceImpl(
             UsuarioRepository usuarioRepository,
             EmpresaRepository empresaRepository,
-            PermissaoService permissaoService,
             TenantAccessService tenantAccessService,
             PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.empresaRepository = empresaRepository;
-        this.permissaoService = permissaoService;
         this.tenantAccessService = tenantAccessService;
         this.passwordEncoder = passwordEncoder;
     }
@@ -54,7 +49,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional(readOnly = true)
     public Page<UsuarioResponse> listar(Long empresaId, Pageable pageable, Authentication auth) {
-        permissaoService.require(auth, ModuloSistema.USUARIOS, PermissaoAcao.VISUALIZAR);
         UsuarioAutenticado autenticado = UsuarioDetailsService.requireUsuarioAutenticado(auth);
 
         Long filtroEmpresaId = resolveEmpresaFiltro(empresaId, autenticado);
@@ -64,14 +58,12 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional(readOnly = true)
     public UsuarioResponse buscarPorId(Long id, Authentication auth) {
-        permissaoService.require(auth, ModuloSistema.USUARIOS, PermissaoAcao.VISUALIZAR);
         Usuario usuario = findAccessibleUser(id, auth);
         return UsuarioResponse.from(usuario);
     }
 
     @Override
     public UsuarioResponse criar(CreateUsuarioRequest request, Authentication auth) {
-        permissaoService.require(auth, ModuloSistema.USUARIOS, PermissaoAcao.CRIAR);
         UsuarioAutenticado autenticado = UsuarioDetailsService.requireUsuarioAutenticado(auth);
 
         validatePerfilCriacao(request.perfil(), autenticado);
@@ -99,7 +91,6 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     public UsuarioResponse atualizar(Long id, UpdateUsuarioRequest request, Authentication auth) {
-        permissaoService.require(auth, ModuloSistema.USUARIOS, PermissaoAcao.EDITAR);
         UsuarioAutenticado autenticado = UsuarioDetailsService.requireUsuarioAutenticado(auth);
         Usuario usuario = findAccessibleUser(id, auth);
 
@@ -122,7 +113,6 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     public void desativar(Long id, Authentication auth) {
-        permissaoService.require(auth, ModuloSistema.USUARIOS, PermissaoAcao.EXCLUIR);
         Usuario usuario = findAccessibleUser(id, auth);
         usuario.setAtivo(false);
         usuario.setDeletedAt(java.time.LocalDateTime.now());

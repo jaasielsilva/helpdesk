@@ -39,18 +39,11 @@ export class MenuService {
   resolveRole(perfil: string): UserRole {
     const normalized = perfil.trim().toUpperCase();
 
-    if (normalized.includes('SUPER') && normalized.includes('ADMIN')) {
-      return 'SUPER_ADMIN';
+    switch (normalized) {
+      case 'SUPER_ADMIN': return 'SUPER_ADMIN';
+      case 'ADMIN':       return 'ADMIN';
+      case 'SUPORTE':     return 'SUPORTE';
+      default:            return 'USER';
     }
-
-    if (normalized === 'SUPORTE' || normalized.includes('SUPORTE')) {
-      return 'SUPORTE';
-    }
-
-    if (normalized === 'ADMIN' || normalized.includes('ADMIN')) {
-      return 'ADMIN';
-    }
-
-    return 'USER';
   }
 }

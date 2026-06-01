@@ -15,9 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.jaasielsilva.helpdesk.dto.chamado.ChamadoCreateRequest;
 import com.jaasielsilva.helpdesk.dto.chamado.ChamadoResponse;
+import com.jaasielsilva.helpdesk.dto.chamado.ChamadoStats;
 import com.jaasielsilva.helpdesk.dto.chamado.ChamadoUpdateRequest;
-import com.jaasielsilva.helpdesk.enums.ModuloSistema;
-import com.jaasielsilva.helpdesk.enums.PermissaoAcao;
+import com.jaasielsilva.helpdesk.enums.PrioridadeChamado;
 import com.jaasielsilva.helpdesk.enums.StatusChamado;
 import com.jaasielsilva.helpdesk.model.Chamado;
 import com.jaasielsilva.helpdesk.model.Usuario;
@@ -37,23 +37,19 @@ public class ChamadoServiceImpl implements ChamadoService {
     private final ChamadoRepository chamadoRepository;
     private final UsuarioRepository usuarioRepository;
     private final TenantAccessService tenantAccessService;
-    private final PermissaoService permissaoService;
 
     public ChamadoServiceImpl(
             ChamadoRepository chamadoRepository,
             UsuarioRepository usuarioRepository,
-            TenantAccessService tenantAccessService,
-            PermissaoService permissaoService) {
+            TenantAccessService tenantAccessService) {
         this.chamadoRepository = chamadoRepository;
         this.usuarioRepository = usuarioRepository;
         this.tenantAccessService = tenantAccessService;
-        this.permissaoService = permissaoService;
     }
 
     @Override
     @CacheEvict(value = "chamados", allEntries = true)
     public ChamadoResponse criar(ChamadoCreateRequest request, Authentication auth) {
-        permissaoService.require(auth, ModuloSistema.CHAMADOS, PermissaoAcao.CRIAR);
         UsuarioAutenticado autenticado = UsuarioDetailsService.requireUsuarioAutenticado(auth);
         log.info("Criando chamado para usuário ID={} por '{}'", request.usuarioId(), auth.getName());
 
@@ -81,31 +77,34 @@ public class ChamadoServiceImpl implements ChamadoService {
         chamado.setUsuario(usuario);
         chamado.setEmpresa(usuario.getEmpresa());
         chamado.setStatus(StatusChamado.ABERTO);
+        chamado.setPrioridade(request.prioridade() != null ? request.prioridade() : PrioridadeChamado.MEDIA);
 
         Chamado salvo = chamadoRepository.save(chamado);
         log.info("Chamado ID={} criado com sucesso por '{}'", salvo.getId(), auth.getName());
-        return converterParaResponse(salvo);
+        return ChamadoResponse.from(salvo);
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "chamados", key = "#auth.name + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
-    public Page<ChamadoResponse> listar(Pageable pageable, Authentication auth) {
+    @Cacheable(value = "chamados", key = "#auth.name.concat('_').concat(#pageable.pageNumber).concat('_').concat(#pageable.pageSize).concat('_').concat(#status).concat('_').concat(#busca)")
+    public Page<ChamadoResponse> listar(Pageable pageable, StatusChamado status, String busca, Authentication auth) {
         UsuarioAutenticado autenticado = UsuarioDetailsService.requireUsuarioAutenticado(auth);
-        log.debug("Listando chamados para '{}' (perfil={})", auth.getName(), autenticado.getPerfil());
+        log.debug("Listando chamados para '{}' (perfil={}) com filtros status={}, busca={}", auth.getName(), autenticado.getPerfil(), status, busca);
+
+        String buscaParam = (busca != null && !busca.isBlank()) ? busca.trim() : null;
 
         if (autenticado.isSuperAdmin()) {
-            return chamadoRepository.findAllActive(pageable).map(this::converterParaResponse);
+            return chamadoRepository.findAllActiveFiltered(status, pageable).map(ChamadoResponse::from);
         }
 
         Long empresaId = tenantAccessService.requireEmpresaId();
 
         if (autenticado.getPerfil().isTenantStaff()) {
-            return chamadoRepository.findAllActiveByEmpresa(empresaId, pageable).map(this::converterParaResponse);
+            return chamadoRepository.findByEmpresaFiltered(empresaId, status, buscaParam, pageable).map(ChamadoResponse::from);
         }
 
-        return chamadoRepository.findAllActiveByEmpresaAndUsuario(empresaId, autenticado.getUsuarioId(), pageable)
-                .map(this::converterParaResponse);
+        return chamadoRepository.findByEmpresaAndUsuarioFiltered(empresaId, autenticado.getUsuarioId(), status, buscaParam, pageable)
+                .map(ChamadoResponse::from);
     }
 
     @Override
@@ -117,7 +116,7 @@ public class ChamadoServiceImpl implements ChamadoService {
 
         Chamado chamado = buscarChamadoAtivo(id, autenticado);
         tenantAccessService.validateChamadoAccess(chamado, autenticado);
-        return converterParaResponse(chamado);
+        return ChamadoResponse.from(chamado);
     }
 
     @Override
@@ -146,6 +145,9 @@ public class ChamadoServiceImpl implements ChamadoService {
             }
             chamado.setStatus(request.status());
         }
+        if (request.prioridade() != null) {
+            chamado.setPrioridade(request.prioridade());
+        }
         if (request.usuarioAtribuidoId() != null) {
             Usuario usuarioAtribuido = usuarioRepository.findById(request.usuarioAtribuidoId())
                     .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com ID: " + request.usuarioAtribuidoId()));
@@ -155,13 +157,12 @@ public class ChamadoServiceImpl implements ChamadoService {
 
         Chamado atualizado = chamadoRepository.save(chamado);
         log.info("Chamado ID={} atualizado com sucesso por '{}'", id, auth.getName());
-        return converterParaResponse(atualizado);
+        return ChamadoResponse.from(atualizado);
     }
 
     @Override
     @CacheEvict(value = {"chamados", "chamado"}, allEntries = true)
     public void deletar(Long id, Authentication auth) {
-        permissaoService.require(auth, ModuloSistema.CHAMADOS, PermissaoAcao.EXCLUIR);
         UsuarioAutenticado autenticado = UsuarioDetailsService.requireUsuarioAutenticado(auth);
 
         log.info("Deletando chamado ID={} por '{}'", id, auth.getName());
@@ -185,19 +186,33 @@ public class ChamadoServiceImpl implements ChamadoService {
                 .orElseThrow(() -> new EntityNotFoundException("Chamado não encontrado com ID: " + id));
     }
 
-    private ChamadoResponse converterParaResponse(Chamado chamado) {
-        return new ChamadoResponse(
-                chamado.getId(),
-                chamado.getTitulo(),
-                chamado.getDescricao(),
-                chamado.getStatus(),
-                chamado.getUsuario().getId(),
-                chamado.getUsuario().getNome(),
-                chamado.getUsuarioAtribuido() != null ? chamado.getUsuarioAtribuido().getId() : null,
-                chamado.getUsuarioAtribuido() != null ? chamado.getUsuarioAtribuido().getNome() : null,
-                chamado.getDataCriacao(),
-                chamado.getDataAtualizacao(),
-                chamado.getDataFechamento()
-        );
+    @Override
+    @Transactional(readOnly = true)
+    public ChamadoStats estatisticas(Authentication auth) {
+        UsuarioAutenticado autenticado = UsuarioDetailsService.requireUsuarioAutenticado(auth);
+        log.debug("Gerando estatísticas de chamados para '{}' (perfil={})", auth.getName(), autenticado.getPerfil());
+
+        java.util.List<Object[]> contagens;
+        if (autenticado.isSuperAdmin()) {
+            contagens = chamadoRepository.countAllByStatus();
+        } else {
+            Long empresaId = tenantAccessService.requireEmpresaId();
+            contagens = chamadoRepository.countByEmpresaAndStatus(empresaId);
+        }
+
+        long abertos = 0, emAtendimento = 0, resolvidos = 0, fechados = 0;
+        for (Object[] linha : contagens) {
+            StatusChamado s = (StatusChamado) linha[0];
+            long count = (Long) linha[1];
+            switch (s) {
+                case ABERTO -> abertos = count;
+                case EM_ATENDIMENTO -> emAtendimento = count;
+                case RESOLVIDO -> resolvidos = count;
+                case FECHADO -> fechados = count;
+            }
+        }
+
+        return new ChamadoStats(abertos + emAtendimento + resolvidos + fechados, abertos, emAtendimento, resolvidos, fechados);
     }
+
 }

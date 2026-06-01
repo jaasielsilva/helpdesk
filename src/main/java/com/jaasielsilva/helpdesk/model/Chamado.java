@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.jaasielsilva.helpdesk.enums.PrioridadeChamado;
 import com.jaasielsilva.helpdesk.enums.StatusChamado;
 
 import jakarta.persistence.Entity;
@@ -34,6 +35,9 @@ public class Chamado {
 
     @Enumerated(EnumType.STRING)
     private StatusChamado status = StatusChamado.ABERTO;
+
+    @Enumerated(EnumType.STRING)
+    private PrioridadeChamado prioridade = PrioridadeChamado.MEDIA;
 
     @ManyToOne
     @JoinColumn(name = "usuario_id", nullable = false)

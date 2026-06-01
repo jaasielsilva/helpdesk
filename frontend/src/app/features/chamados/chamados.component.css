@@ -1,52 +1,147 @@
 /* ── Animação de Feedback de Validação ── */
 @keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-
 .animate-slideDown {
   animation: slideDown 0.2s ease-out forwards;
 }
+.loading-spinner {
+  display: inline-block;
+}
 
-/* ── Paginação Customizada Premium HP2 ── */
-.pagination-btn {
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--border);
-  background-color: #ffffff;
-  color: var(--text);
+/* ── KPI Cards ── */
+.kpi-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  border-color: #e2e8f0;
+}
+.kpi-card.kpi-active {
+  border-color: #7c3aed;
+  background: #faf5ff;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.15);
+}
+.kpi-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+.kpi-value {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+  color: #1e293b;
+}
+.kpi-label {
+  font-size: 11px;
   font-weight: 600;
-  font-size: 13px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Prioridade ── */
+.prioridade-btn {
+  padding: 8px 4px;
   border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
   cursor: pointer;
   transition: all 0.2s ease;
 }
-
-.pagination-btn:hover:not(:disabled) {
-  border-color: var(--primary);
-  background-color: #f5f3ff;
-  color: var(--primary);
+.prioridade-btn:hover {
+  border-color: var(--p-color);
+  color: var(--p-color);
 }
-
-.pagination-btn.active {
-  background: var(--brand-gradient);
-  border-color: transparent;
+.prioridade-btn.prioridade-active {
+  background: var(--p-color);
+  border-color: var(--p-color);
   color: #ffffff;
-  box-shadow: 0 4px 10px rgba(118, 75, 162, 0.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
-
-.pagination-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  background-color: #f8fafc;
-}
-
-.loading-spinner {
+.prioridade-dot {
   display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* ── Slide-Over ── */
+.slide-over-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  z-index: 50;
+  display: flex;
+  justify-content: flex-end;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(2px);
+}
+.slide-over-backdrop.slide-over-visible {
+  opacity: 1;
+}
+.slide-over-panel {
+  width: 420px;
+  max-width: 100vw;
+  height: 100%;
+  background: #ffffff;
+  box-shadow: -8px 0 30px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.slide-over-panel.slide-over-visible {
+  transform: translateX(0);
+}
+
+/* ── Status Action Buttons (Slide-Over) ── */
+.status-action-btn {
+  padding: 10px 8px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.status-action-btn:hover {
+  border-color: var(--s-color);
+  color: var(--s-color);
+  background: #f8fafc;
+}
+.status-action-btn.status-action-active {
+  background: var(--s-color);
+  border-color: var(--s-color);
+  color: #ffffff;
+}
+
+/* ── Cursor pointer na tabela ── */
+.data-table tbody tr {
+  cursor: pointer;
 }

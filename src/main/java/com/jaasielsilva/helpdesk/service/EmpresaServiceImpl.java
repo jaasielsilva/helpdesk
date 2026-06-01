@@ -11,9 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.jaasielsilva.helpdesk.dto.empresa.CreateEmpresaRequest;
 import com.jaasielsilva.helpdesk.dto.empresa.EmpresaCreateResponse;
 import com.jaasielsilva.helpdesk.dto.empresa.EmpresaResponse;
-import com.jaasielsilva.helpdesk.enums.ModuloSistema;
 import com.jaasielsilva.helpdesk.enums.PerfilUsuario;
-import com.jaasielsilva.helpdesk.enums.PermissaoAcao;
 import com.jaasielsilva.helpdesk.exception.ConflictException;
 import com.jaasielsilva.helpdesk.model.Empresa;
 import com.jaasielsilva.helpdesk.model.Usuario;
@@ -31,23 +29,19 @@ public class EmpresaServiceImpl implements EmpresaService {
 
     private final EmpresaRepository empresaRepository;
     private final UsuarioRepository usuarioRepository;
-    private final PermissaoService permissaoService;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     public EmpresaServiceImpl(
             EmpresaRepository empresaRepository,
             UsuarioRepository usuarioRepository,
-            PermissaoService permissaoService,
             org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
         this.empresaRepository = empresaRepository;
         this.usuarioRepository = usuarioRepository;
-        this.permissaoService = permissaoService;
         this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public EmpresaCreateResponse criar(CreateEmpresaRequest request, Authentication auth) {
-        permissaoService.require(auth, ModuloSistema.EMPRESAS, PermissaoAcao.CRIAR);
         UsuarioDetailsService.requireUsuarioAutenticado(auth);
 
         String slug = request.slug().trim().toLowerCase();
@@ -90,14 +84,12 @@ public class EmpresaServiceImpl implements EmpresaService {
     @Override
     @Transactional(readOnly = true)
     public Page<EmpresaResponse> listar(Pageable pageable, Authentication auth) {
-        permissaoService.require(auth, ModuloSistema.EMPRESAS, PermissaoAcao.VISUALIZAR);
         return empresaRepository.findAll(pageable).map(EmpresaResponse::from);
     }
 
     @Override
     @Transactional(readOnly = true)
     public EmpresaResponse buscarPorId(Long id, Authentication auth) {
-        permissaoService.require(auth, ModuloSistema.EMPRESAS, PermissaoAcao.VISUALIZAR);
         Empresa empresa = empresaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Empresa não encontrada com ID: " + id));
         return EmpresaResponse.from(empresa);
@@ -105,7 +97,6 @@ public class EmpresaServiceImpl implements EmpresaService {
 
     @Override
     public EmpresaResponse atualizarStatus(Long id, boolean ativo, Authentication auth) {
-        permissaoService.require(auth, ModuloSistema.EMPRESAS, PermissaoAcao.EDITAR);
         Empresa empresa = empresaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Empresa não encontrada com ID: " + id));
         empresa.setAtivo(ativo);

@@ -4,10 +4,10 @@ import { Observable, map } from 'rxjs';
 
 import {
   CreateUsuarioRequest,
-  PageResponse,
   UpdateUsuarioRequest,
   Usuario
 } from '../models/usuario';
+import { PageResponse } from '../models/page-response';
 
 @Injectable({ providedIn: 'root' })
 export class UsuarioService {

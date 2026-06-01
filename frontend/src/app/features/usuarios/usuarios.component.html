@@ -25,7 +25,11 @@
     @if (carregando) {
       <p class="text-sm text-slate-500 py-8 text-center">Carregando usuários...</p>
     } @else if (usuarios.length === 0) {
-      <p class="text-sm text-slate-500 py-8 text-center">Nenhum usuário encontrado.</p>
+      <app-empty-state
+        icone="👥"
+        titulo="Nenhum usuário encontrado."
+        descricao="Cadastre membros da equipe usando o botão acima."
+      />
     } @else {
       <div class="table-wrap">
         <table class="data-table">
@@ -70,15 +74,11 @@
         </table>
       </div>
 
-      @if (totalPaginas > 1) {
-        <nav class="mt-6 flex items-center justify-center gap-2" aria-label="Paginação">
-          <button type="button" class="btn-secondary px-3 py-1.5 text-xs" [disabled]="paginaAtual === 0" (click)="irParaPagina(paginaAtual - 1)">Anterior</button>
-          @for (pagina of paginas; track pagina) {
-            <button type="button" class="btn-secondary px-3 py-1.5 text-xs" [class.bg-violet-100]="pagina === paginaAtual" (click)="irParaPagina(pagina)">{{ pagina + 1 }}</button>
-          }
-          <button type="button" class="btn-secondary px-3 py-1.5 text-xs" [disabled]="paginaAtual >= totalPaginas - 1" (click)="irParaPagina(paginaAtual + 1)">Próximo</button>
-        </nav>
-      }
+      <app-pagination
+        [paginaAtual]="paginaAtual"
+        [totalPaginas]="totalPaginas"
+        (irParaPagina)="carregar($event)"
+      />
     }
   </section>
 </div>

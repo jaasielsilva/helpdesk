@@ -2,6 +2,8 @@ import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
+import { EmptyStateComponent } from '../../core/components/empty-state.component';
+import { PaginationComponent } from '../../core/components/pagination.component';
 import { Empresa } from '../../core/models/empresa';
 import { UserRole } from '../../core/models/user-role';
 import { Usuario } from '../../core/models/usuario';
@@ -14,7 +16,7 @@ import { UsuarioService } from '../../core/services/usuario.service';
 @Component({
   selector: 'app-usuarios',
   standalone: true,
-  imports: [DatePipe, ReactiveFormsModule],
+  imports: [DatePipe, ReactiveFormsModule, PaginationComponent, EmptyStateComponent],
   templateUrl: './usuarios.component.html',
   styleUrl: './usuarios.component.css'
 })
@@ -129,15 +131,6 @@ export class UsuariosComponent implements OnInit {
     });
   }
 
-  irParaPagina(pagina: number): void {
-    if (pagina < 0 || pagina >= this.totalPaginas) return;
-    this.carregar(pagina);
-  }
-
-  get paginas(): number[] {
-    return Array.from({ length: this.totalPaginas }, (_, i) => i);
-  }
-
   perfilLabel(perfil: string): string {
     const map: Record<string, string> = {
       ADMIN: 'Administrador',
@@ -147,7 +140,7 @@ export class UsuariosComponent implements OnInit {
     return map[perfil] ?? perfil;
   }
 
-  private carregar(pagina = 0): void {
+  carregar(pagina = 0): void {
     this.carregando = true;
     this.usuarioService.listar(pagina, this.tamanhoPagina, this.empresaFiltro ?? undefined).subscribe({
       next: (page) => {

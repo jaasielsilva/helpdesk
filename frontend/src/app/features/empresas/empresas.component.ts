@@ -2,6 +2,8 @@ import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
+import { EmptyStateComponent } from '../../core/components/empty-state.component';
+import { PaginationComponent } from '../../core/components/pagination.component';
 import { Empresa } from '../../core/models/empresa';
 import { EmpresaService } from '../../core/services/empresa.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -11,7 +13,7 @@ import { AuthService } from '../../core/services/auth.service';
 @Component({
   selector: 'app-empresas',
   standalone: true,
-  imports: [DatePipe, ReactiveFormsModule],
+  imports: [DatePipe, ReactiveFormsModule, PaginationComponent, EmptyStateComponent],
   templateUrl: './empresas.component.html',
   styleUrl: './empresas.component.css'
 })
@@ -99,16 +101,7 @@ export class EmpresasComponent implements OnInit {
     });
   }
 
-  irParaPagina(pagina: number): void {
-    if (pagina < 0 || pagina >= this.totalPaginas) return;
-    this.carregar(pagina);
-  }
-
-  get paginas(): number[] {
-    return Array.from({ length: this.totalPaginas }, (_, i) => i);
-  }
-
-  private carregar(pagina = 0): void {
+  carregar(pagina = 0): void {
     this.carregando = true;
     this.empresaService.listar(pagina, this.tamanhoPagina).subscribe({
       next: (page) => {

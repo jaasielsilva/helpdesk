@@ -5,9 +5,9 @@ import { Observable, map } from 'rxjs';
 import {
   CreateEmpresaRequest,
   Empresa,
-  EmpresaCreateResponse,
-  PageResponse
+  EmpresaCreateResponse
 } from '../models/empresa';
+import { PageResponse } from '../models/page-response';
 
 @Injectable({ providedIn: 'root' })
 export class EmpresaService {

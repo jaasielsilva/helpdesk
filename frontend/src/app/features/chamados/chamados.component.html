@@ -1,197 +1,354 @@
-<div class="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start animate-fade-in">
-  
-  <!-- PAINEL ESQUERDO: Abertura de Novo Chamado -->
-  <section class="panel bg-white border border-slate-100 rounded-2xl p-6 shadow-premium">
-    <div class="border-b border-slate-100 pb-4 mb-5">
-      <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-        <span>🆘</span> Registrar Chamado
-      </h2>
-      <p class="text-xs text-slate-500 mt-1">Abra uma nova solicitação técnica para atendimento operacional.</p>
-    </div>
+<div class="space-y-6 animate-fade-in">
 
-    <form class="space-y-4" [formGroup]="form" (ngSubmit)="salvar()">
-      
-      <!-- Campo 1: Título -->
-      <div>
-        <label for="titulo" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-          Título do Chamado <span class="text-rose-500">*</span>
-        </label>
-        <div class="relative">
-          <span class="absolute left-4 top-3.5 text-slate-400">📝</span>
-          <input 
-            id="titulo" 
-            type="text" 
-            formControlName="titulo"
-            class="w-full pl-11 pr-4 py-3 rounded-lg border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-opacity-20"
-            [class.border-slate-200]="!campoInvalido('titulo')"
-            [class.border-rose-500]="campoInvalido('titulo')"
-            [class.focus:ring-brand-500]="!campoInvalido('titulo')"
-            [class.focus:ring-rose-500]="campoInvalido('titulo')"
-            [class.focus:border-brand-500]="!campoInvalido('titulo')"
-            [class.focus:border-rose-500]="campoInvalido('titulo')"
-            placeholder="Ex: Erro no acesso ao ERP corporativo"
-          />
-        </div>
-        <!-- Feedback de Erro Dinâmico -->
-        @if (campoInvalido('titulo')) {
-          <div class="text-xs text-rose-500 mt-1.5 flex items-center gap-1 animate-slideDown">
-            <span>⚠️</span> Título obrigatório (mínimo 3 caracteres).
-          </div>
-        }
-      </div>
-
-      <!-- Campo 2: Descrição -->
-      <div>
-        <label for="descricao" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-          Descrição Detalhada <span class="text-rose-500">*</span>
-        </label>
-        <textarea 
-          id="descricao" 
-          formControlName="descricao" 
-          rows="5"
-          class="w-full px-4 py-3 rounded-lg border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-opacity-20"
-          [class.border-slate-200]="!campoInvalido('descricao')"
-          [class.border-rose-500]="campoInvalido('descricao')"
-          [class.focus:ring-brand-500]="!campoInvalido('descricao')"
-          [class.focus:ring-rose-500]="campoInvalido('descricao')"
-          [class.focus:border-brand-500]="!campoInvalido('descricao')"
-          [class.focus:border-rose-500]="campoInvalido('descricao')"
-          placeholder="Descreva minuciosamente o problema ou solicitação de suporte..."
-        ></textarea>
-        <!-- Feedback de Erro Dinâmico -->
-        @if (campoInvalido('descricao')) {
-          <div class="text-xs text-rose-500 mt-1.5 flex items-center gap-1 animate-slideDown">
-            <span>⚠️</span> Descrição obrigatória (mínimo 10 caracteres).
-          </div>
-        }
-      </div>
-
-      <!-- Botão de Envio com Estado de Carregamento -->
-      <button 
-        type="submit" 
-        [disabled]="form.invalid || salvando"
-        class="w-full btn-primary py-3.5 flex items-center justify-center gap-2 text-sm font-semibold rounded-lg"
-      >
-        @if (!salvando) {
-          <span class="flex items-center gap-2">
-            <span>🚀</span> Enviar Solicitação
-          </span>
-        } @else {
-          <span class="flex items-center gap-2">
-            <span class="loading-spinner w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-            Registrando chamado...
-          </span>
-        }
-      </button>
-    </form>
+  <!-- KPI SUMMARY CARDS -->
+  <section class="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <button class="kpi-card group" (click)="filtrarPorStatus('')" [class.kpi-active]="filtroStatus === ''">
+      <div class="kpi-icon bg-slate-100 text-slate-600">📊</div>
+      <div class="kpi-value">{{ stats.total }}</div>
+      <div class="kpi-label">Total</div>
+    </button>
+    <button class="kpi-card group" (click)="filtrarPorStatus('ABERTO')" [class.kpi-active]="filtroStatus === 'ABERTO'">
+      <div class="kpi-icon bg-blue-50 text-blue-600">🔵</div>
+      <div class="kpi-value text-blue-600">{{ stats.abertos }}</div>
+      <div class="kpi-label">Abertos</div>
+    </button>
+    <button class="kpi-card group" (click)="filtrarPorStatus('EM_ATENDIMENTO')" [class.kpi-active]="filtroStatus === 'EM_ATENDIMENTO'">
+      <div class="kpi-icon bg-amber-50 text-amber-600">🟡</div>
+      <div class="kpi-value text-amber-600">{{ stats.emAtendimento }}</div>
+      <div class="kpi-label">Em Atendimento</div>
+    </button>
+    <button class="kpi-card group" (click)="filtrarPorStatus('RESOLVIDO')" [class.kpi-active]="filtroStatus === 'RESOLVIDO'">
+      <div class="kpi-icon bg-emerald-50 text-emerald-600">🟢</div>
+      <div class="kpi-value text-emerald-600">{{ stats.resolvidos }}</div>
+      <div class="kpi-label">Resolvidos</div>
+    </button>
+    <button class="kpi-card group" (click)="filtrarPorStatus('FECHADO')" [class.kpi-active]="filtroStatus === 'FECHADO'">
+      <div class="kpi-icon bg-gray-100 text-gray-500">⚫</div>
+      <div class="kpi-value text-gray-500">{{ stats.fechados }}</div>
+      <div class="kpi-label">Fechados</div>
+    </button>
   </section>
 
-  <!-- PAINEL DIREITO: Fila de Chamados Operacionais -->
-  <section class="panel bg-white border border-slate-100 rounded-2xl p-6 shadow-premium">
-    <div class="border-b border-slate-100 pb-4 mb-5">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  <div class="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
+
+    <!-- PAINEL ESQUERDO: Abertura de Novo Chamado -->
+    <section class="panel bg-white border border-slate-100 rounded-2xl p-6 shadow-premium">
+      <div class="border-b border-slate-100 pb-4 mb-5">
+        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <span>🆘</span> Registrar Chamado
+        </h2>
+        <p class="text-xs text-slate-500 mt-1">Abra uma nova solicitação técnica para atendimento operacional.</p>
+      </div>
+
+      <form class="space-y-4" [formGroup]="form" (ngSubmit)="salvar()">
+
+        <!-- Campo: Título -->
         <div>
-          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <span>📋</span> Fila Operacional de Chamados
-          </h2>
-          <p class="text-xs text-slate-500 mt-1">
-            Fila principal para acompanhamento de chamados operacionais.
-            @if (totalElementos > 0) {
-              <span class="font-bold text-brand-600">({{ totalElementos }} no total)</span>
+          <label for="titulo" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            Título do Chamado <span class="text-rose-500">*</span>
+          </label>
+          <div class="relative">
+            <span class="absolute left-4 top-3.5 text-slate-400">📝</span>
+            <input
+              id="titulo"
+              type="text"
+              formControlName="titulo"
+              class="w-full pl-11 pr-4 py-3 rounded-lg border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-opacity-20"
+              [class.border-slate-200]="!campoInvalido('titulo')"
+              [class.border-rose-500]="campoInvalido('titulo')"
+              [class.focus:ring-brand-500]="!campoInvalido('titulo')"
+              [class.focus:ring-rose-500]="campoInvalido('titulo')"
+              [class.focus:border-brand-500]="!campoInvalido('titulo')"
+              [class.focus:border-rose-500]="campoInvalido('titulo')"
+              placeholder="Ex: Erro no acesso ao ERP corporativo"
+            />
+          </div>
+          @if (campoInvalido('titulo')) {
+            <div class="text-xs text-rose-500 mt-1.5 flex items-center gap-1 animate-slideDown">
+              <span>⚠️</span> Título obrigatório (mínimo 3 caracteres).
+            </div>
+          }
+        </div>
+
+        <!-- Campo: Descrição -->
+        <div>
+          <label for="descricao" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            Descrição Detalhada <span class="text-rose-500">*</span>
+          </label>
+          <textarea
+            id="descricao"
+            formControlName="descricao"
+            rows="4"
+            class="w-full px-4 py-3 rounded-lg border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-opacity-20"
+            [class.border-slate-200]="!campoInvalido('descricao')"
+            [class.border-rose-500]="campoInvalido('descricao')"
+            [class.focus:ring-brand-500]="!campoInvalido('descricao')"
+            [class.focus:ring-rose-500]="campoInvalido('descricao')"
+            [class.focus:border-brand-500]="!campoInvalido('descricao')"
+            [class.focus:border-rose-500]="campoInvalido('descricao')"
+            placeholder="Descreva minuciosamente o problema..."
+          ></textarea>
+          @if (campoInvalido('descricao')) {
+            <div class="text-xs text-rose-500 mt-1.5 flex items-center gap-1 animate-slideDown">
+              <span>⚠️</span> Descrição obrigatória (mínimo 10 caracteres).
+            </div>
+          }
+        </div>
+
+        <!-- Campo: Prioridade -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            Prioridade
+          </label>
+          <div class="grid grid-cols-4 gap-2">
+            @for (p of prioridadeOptions; track p) {
+              <button
+                type="button"
+                class="prioridade-btn"
+                [class.prioridade-active]="form.get('prioridade')?.value === p"
+                [style.--p-color]="prioridadeColor(p)"
+                (click)="form.get('prioridade')?.setValue(p)">
+                {{ prioridadeLabel(p) }}
+              </button>
             }
-          </p>
+          </div>
+        </div>
+
+        <!-- Botão de Envio -->
+        <button
+          type="submit"
+          [disabled]="form.invalid || salvando"
+          class="w-full btn-primary py-3.5 flex items-center justify-center gap-2 text-sm font-semibold rounded-lg"
+        >
+          @if (!salvando) {
+            <span class="flex items-center gap-2">
+              <span>🚀</span> Enviar Solicitação
+            </span>
+          } @else {
+            <span class="flex items-center gap-2">
+              <span class="loading-spinner w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              Registrando chamado...
+            </span>
+          }
+        </button>
+      </form>
+    </section>
+
+    <!-- PAINEL DIREITO: Fila de Chamados Operacionais -->
+    <section class="panel bg-white border border-slate-100 rounded-2xl p-6 shadow-premium">
+
+      <!-- HEADER: Título + Busca -->
+      <div class="border-b border-slate-100 pb-4 mb-5">
+        <div class="flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <span>📋</span> Fila Operacional
+              </h2>
+              <p class="text-xs text-slate-500 mt-1">
+                @if (totalElementos > 0) {
+                  <span class="font-bold text-brand-600">{{ totalElementos }}</span> chamado(s) encontrado(s)
+                } @else {
+                  Nenhum chamado encontrado
+                }
+              </p>
+            </div>
+          </div>
+
+          <!-- Search Bar -->
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+            <input
+              type="text"
+              placeholder="Buscar por título..."
+              class="w-full pl-11 pr-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+              (input)="onBuscaInput($event)"
+            />
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Estado: Carregando -->
-    @if (carregando) {
-      <div class="py-16 flex flex-col items-center justify-center gap-3 text-slate-400">
-        <span class="loading-spinner w-8 h-8 border-3 border-slate-200 border-t-brand-500 rounded-full animate-spin"></span>
-        <span class="text-xs font-semibold uppercase tracking-wider">Carregando chamados...</span>
-      </div>
-    } @else if (chamados.length === 0) {
-      <!-- Estado: Sem Registros -->
-      <div class="py-20 text-center text-slate-400 font-medium">
-        <span class="text-4xl block mb-3">📂</span>
-        <p class="text-sm">Nenhum chamado registrado até o momento.</p>
-        <p class="text-xs text-slate-400 mt-1">Use o formulário ao lado para abrir o primeiro chamado.</p>
-      </div>
-    } @else {
-      <!-- Tabela Corporativa HP2 -->
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr class="bg-slate-50/50">
-              <th>ID</th>
-              <th>Título / Descrição</th>
-              <th>Status</th>
-              <th class="text-right">Criado em</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-50">
-            @for (chamado of chamados; track chamado.id) {
-              <tr class="hover:bg-slate-50/30 transition-colors duration-150">
-                <td class="font-bold text-slate-400 text-xs w-16">#{{ chamado.id }}</td>
-                <td>
-                  <strong class="text-slate-700 font-semibold block text-sm">{{ chamado.titulo }}</strong>
-                  <p class="text-xs text-slate-400 mt-0.5 max-w-[420px] truncate block">{{ chamado.descricao }}</p>
-                </td>
-                <td>
-                  <span class="badge"
-                    [class.badge-blue]="chamado.status === 'ABERTO'"
-                    [class.badge-yellow]="chamado.status === 'EM_ATENDIMENTO'"
-                    [class.badge-green]="chamado.status === 'RESOLVIDO'"
-                    [class.badge-gray]="chamado.status === 'FECHADO'">
-                    {{ chamado.status }}
-                  </span>
-                </td>
-                <td class="text-right text-xs text-slate-400 font-medium w-40">
-                  {{ chamado.dataCriacao | date:'dd/MM/yyyy HH:mm' }}
-                </td>
+      <!-- Estado: Carregando -->
+      @if (carregando) {
+        <div class="py-16 flex flex-col items-center justify-center gap-3 text-slate-400">
+          <span class="loading-spinner w-8 h-8 border-3 border-slate-200 border-t-brand-500 rounded-full animate-spin"></span>
+          <span class="text-xs font-semibold uppercase tracking-wider">Carregando chamados...</span>
+        </div>
+      } @else if (chamados.length === 0) {
+        <app-empty-state
+          icone="📂"
+          titulo="Nenhum chamado encontrado."
+          descricao="Ajuste os filtros ou use o formulário para abrir um novo chamado."
+        />
+      } @else {
+        <!-- Tabela Premium -->
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr class="bg-slate-50/50">
+                <th class="w-16">ID</th>
+                <th>Título</th>
+                <th>Prioridade</th>
+                <th>Status</th>
+                <th>Aberto</th>
+                @if (podeEditar) {
+                  <th class="text-right">Ações</th>
+                }
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody class="divide-y divide-slate-50">
+              @for (chamado of chamados; track chamado.id) {
+                <tr class="hover:bg-slate-50/50 transition-colors duration-150 cursor-pointer" (click)="abrirDetalhe(chamado)">
+                  <td class="font-bold text-slate-400 text-xs">#{{ chamado.id }}</td>
+                  <td>
+                    <strong class="text-slate-700 font-semibold block text-sm">{{ chamado.titulo }}</strong>
+                    <p class="text-xs text-slate-400 mt-0.5 max-w-[320px] truncate block">{{ chamado.descricao }}</p>
+                  </td>
+                  <td>
+                    <span class="prioridade-dot" [style.background]="prioridadeColor(chamado.prioridade)"></span>
+                    <span class="text-xs font-medium text-slate-600">{{ prioridadeLabel(chamado.prioridade) }}</span>
+                  </td>
+                  <td>
+                    <span class="badge"
+                      [class.badge-blue]="chamado.status === 'ABERTO'"
+                      [class.badge-yellow]="chamado.status === 'EM_ATENDIMENTO'"
+                      [class.badge-green]="chamado.status === 'RESOLVIDO'"
+                      [class.badge-gray]="chamado.status === 'FECHADO'">
+                      {{ statusLabel(chamado.status) }}
+                    </span>
+                  </td>
+                  <td class="text-xs text-slate-400 font-medium whitespace-nowrap">
+                    {{ tempoRelativo(chamado.dataCriacao) }}
+                  </td>
+                  @if (podeEditar) {
+                    <td class="text-right" (click)="$event.stopPropagation()">
+                      <select
+                        class="input-field py-1 px-2 text-xs w-auto"
+                        [value]="chamado.status"
+                        (change)="atualizarStatus(chamado, $any($event.target).value)"
+                      >
+                        @for (status of statusOptions; track status) {
+                          <option [value]="status">{{ statusLabel(status) }}</option>
+                        }
+                      </select>
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginação -->
+        <app-pagination
+          [paginaAtual]="paginaAtual"
+          [totalPaginas]="totalPaginas"
+          (irParaPagina)="carregar($event)"
+        />
+      }
+    </section>
+  </div>
+</div>
+
+<!-- SLIDE-OVER DE DETALHE -->
+@if (chamadoSelecionado) {
+  <div class="slide-over-backdrop" [class.slide-over-visible]="slideOverAberto" (click)="fecharDetalhe()">
+    <div class="slide-over-panel" [class.slide-over-visible]="slideOverAberto" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="flex items-center justify-between p-6 border-b border-slate-100">
+        <div>
+          <h3 class="text-lg font-bold text-slate-800">Chamado #{{ chamadoSelecionado.id }}</h3>
+          <span class="text-xs text-slate-500">{{ tempoRelativo(chamadoSelecionado.dataCriacao) }}</span>
+        </div>
+        <button class="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors" (click)="fecharDetalhe()">✕</button>
       </div>
 
-      <!-- Paginação Customizada Premium -->
-      @if (totalPaginas > 1) {
-        <nav class="pagination-bar mt-6 flex items-center justify-center gap-2" aria-label="Paginação de chamados">
-          
-          <!-- Botão Anterior -->
-          <button
-            class="pagination-btn flex items-center justify-center"
-            [disabled]="paginaAtual === 0"
-            (click)="irParaPagina(paginaAtual - 1)"
-            aria-label="Página anterior"
-          >
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
+      <!-- Body -->
+      <div class="p-6 space-y-6 overflow-y-auto flex-1">
+        <!-- Título -->
+        <div>
+          <h4 class="text-sm font-bold text-slate-700 mb-2">{{ chamadoSelecionado.titulo }}</h4>
+          <p class="text-sm text-slate-600 leading-relaxed">{{ chamadoSelecionado.descricao }}</p>
+        </div>
 
-          <!-- Páginas Numéricas -->
-          @for (pagina of paginas; track pagina) {
-            <button
-              class="pagination-btn"
-              [class.active]="pagina === paginaAtual"
-              (click)="irParaPagina(pagina)"
-              [attr.aria-current]="pagina === paginaAtual ? 'page' : null"
-            >
-              {{ pagina + 1 }}
-            </button>
+        <!-- Status + Prioridade -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="p-3 rounded-lg bg-slate-50 border border-slate-100">
+            <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Status</div>
+            <span class="badge"
+              [class.badge-blue]="chamadoSelecionado.status === 'ABERTO'"
+              [class.badge-yellow]="chamadoSelecionado.status === 'EM_ATENDIMENTO'"
+              [class.badge-green]="chamadoSelecionado.status === 'RESOLVIDO'"
+              [class.badge-gray]="chamadoSelecionado.status === 'FECHADO'">
+              {{ statusLabel(chamadoSelecionado.status) }}
+            </span>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-50 border border-slate-100">
+            <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Prioridade</div>
+            <div class="flex items-center gap-2">
+              <span class="prioridade-dot" [style.background]="prioridadeColor(chamadoSelecionado.prioridade)"></span>
+              <span class="text-sm font-semibold text-slate-700">{{ prioridadeLabel(chamadoSelecionado.prioridade) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Responsáveis -->
+        <div class="p-3 rounded-lg bg-slate-50 border border-slate-100 space-y-2">
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-500">Solicitante</span>
+            <span class="font-medium text-slate-700">{{ chamadoSelecionado.usuarioNome }}</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-500">Atribuído</span>
+            <span class="font-medium text-slate-700">{{ chamadoSelecionado.usuarioAtribuidoNome ?? '—' }}</span>
+          </div>
+        </div>
+
+        <!-- Datas -->
+        <div class="p-3 rounded-lg bg-slate-50 border border-slate-100 space-y-2">
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-500">Criado</span>
+            <span class="font-medium text-slate-700">{{ chamadoSelecionado.dataCriacao | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-500">Atualizado</span>
+            <span class="font-medium text-slate-700">{{ chamadoSelecionado.dataAtualizacao | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+          @if (chamadoSelecionado.dataFechamento) {
+            <div class="flex justify-between text-sm">
+              <span class="text-slate-500">Fechado</span>
+              <span class="font-medium text-emerald-600">{{ chamadoSelecionado.dataFechamento | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
           }
+        </div>
 
-          <!-- Botão Próximo -->
-          <button
-            class="pagination-btn flex items-center justify-center"
-            [disabled]="paginaAtual === totalPaginas - 1"
-            (click)="irParaPagina(paginaAtual + 1)"
-            aria-label="Próxima página"
-          >
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <!-- Ações rápidas -->
+        @if (podeEditar) {
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Alterar Status</label>
+            <div class="grid grid-cols-2 gap-2">
+              @for (status of statusOptions; track status) {
+                <button
+                  class="status-action-btn"
+                  [class.status-action-active]="chamadoSelecionado.status === status"
+                  [style.--s-color]="statusColor(status)"
+                  (click)="atualizarStatus(chamadoSelecionado, status)">
+                  {{ statusLabel(status) }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Footer -->
+      @if (podeEditar) {
+        <div class="p-4 border-t border-slate-100">
+          <button class="w-full py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" (click)="deletar(chamadoSelecionado)">
+            🗑️ Excluir Chamado
           </button>
-        </nav>
+        </div>
       }
-    }
-  </section>
-</div>
+    </div>
+  </div>
+}
