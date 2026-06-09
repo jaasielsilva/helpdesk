@@ -17,12 +17,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.jaasielsilva.helpdesk.config.Auditavel;
 import com.jaasielsilva.helpdesk.dto.ApiResponse;
 import com.jaasielsilva.helpdesk.dto.chamado.ChamadoCreateRequest;
 import com.jaasielsilva.helpdesk.dto.chamado.ChamadoResponse;
 import com.jaasielsilva.helpdesk.dto.chamado.ChamadoUpdateRequest;
-import com.jaasielsilva.helpdesk.enums.ModuloSistema;
-import com.jaasielsilva.helpdesk.enums.PermissaoAcao;
 import com.jaasielsilva.helpdesk.service.ChamadoService;
 
 import jakarta.validation.Valid;
@@ -40,6 +39,7 @@ public class ChamadoController {
     }
 
     @PostMapping
+    @Auditavel(modulo = com.jaasielsilva.helpdesk.enums.ModuloSistema.CHAMADOS, acao = com.jaasielsilva.helpdesk.enums.PermissaoAcao.CRIAR, descricao = "Chamado criado")
     @PreAuthorize("@permService.can(authentication, T(com.jaasielsilva.helpdesk.enums.ModuloSistema).CHAMADOS, T(com.jaasielsilva.helpdesk.enums.PermissaoAcao).CRIAR)")
     public ResponseEntity<ApiResponse<ChamadoResponse>> criar(
             @Valid @RequestBody ChamadoCreateRequest request,
@@ -67,6 +67,7 @@ public class ChamadoController {
     }
 
     @PutMapping("/{id}")
+    @Auditavel(modulo = com.jaasielsilva.helpdesk.enums.ModuloSistema.CHAMADOS, acao = com.jaasielsilva.helpdesk.enums.PermissaoAcao.EDITAR, descricao = "Chamado atualizado")
     @PreAuthorize("@permService.can(authentication, T(com.jaasielsilva.helpdesk.enums.ModuloSistema).CHAMADOS, T(com.jaasielsilva.helpdesk.enums.PermissaoAcao).EDITAR)")
     public ResponseEntity<ApiResponse<ChamadoResponse>> atualizar(
             @PathVariable Long id,
@@ -78,6 +79,7 @@ public class ChamadoController {
     }
 
     @DeleteMapping("/{id}")
+    @Auditavel(modulo = com.jaasielsilva.helpdesk.enums.ModuloSistema.CHAMADOS, acao = com.jaasielsilva.helpdesk.enums.PermissaoAcao.EXCLUIR, descricao = "Chamado excluído")
     @PreAuthorize("@permService.can(authentication, T(com.jaasielsilva.helpdesk.enums.ModuloSistema).CHAMADOS, T(com.jaasielsilva.helpdesk.enums.PermissaoAcao).EXCLUIR)")
     public ResponseEntity<ApiResponse<Void>> deletar(@PathVariable Long id, Authentication auth) {
         log.debug("DELETE /api/chamados/{} por '{}'", id, auth.getName());

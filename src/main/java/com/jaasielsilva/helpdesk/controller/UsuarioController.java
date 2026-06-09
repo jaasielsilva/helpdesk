@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.jaasielsilva.helpdesk.config.Auditavel;
 import com.jaasielsilva.helpdesk.dto.ApiResponse;
 import com.jaasielsilva.helpdesk.dto.usuario.CreateUsuarioRequest;
 import com.jaasielsilva.helpdesk.dto.usuario.UpdateUsuarioRequest;
@@ -58,6 +59,7 @@ public class UsuarioController {
     }
 
     @PostMapping
+    @Auditavel(modulo = com.jaasielsilva.helpdesk.enums.ModuloSistema.USUARIOS, acao = com.jaasielsilva.helpdesk.enums.PermissaoAcao.CRIAR, descricao = "Usuário criado")
     @PreAuthorize("@permService.can(authentication, T(com.jaasielsilva.helpdesk.enums.ModuloSistema).USUARIOS, T(com.jaasielsilva.helpdesk.enums.PermissaoAcao).CRIAR)")
     public ResponseEntity<ApiResponse<UsuarioResponse>> criar(
             @Valid @RequestBody CreateUsuarioRequest request,
@@ -69,6 +71,7 @@ public class UsuarioController {
     }
 
     @PutMapping("/{id}")
+    @Auditavel(modulo = com.jaasielsilva.helpdesk.enums.ModuloSistema.USUARIOS, acao = com.jaasielsilva.helpdesk.enums.PermissaoAcao.EDITAR, descricao = "Usuário atualizado")
     @PreAuthorize("@permService.can(authentication, T(com.jaasielsilva.helpdesk.enums.ModuloSistema).USUARIOS, T(com.jaasielsilva.helpdesk.enums.PermissaoAcao).EDITAR)")
     public ResponseEntity<ApiResponse<UsuarioResponse>> atualizar(
             @PathVariable Long id,
@@ -80,6 +83,7 @@ public class UsuarioController {
     }
 
     @DeleteMapping("/{id}")
+    @Auditavel(modulo = com.jaasielsilva.helpdesk.enums.ModuloSistema.USUARIOS, acao = com.jaasielsilva.helpdesk.enums.PermissaoAcao.EXCLUIR, descricao = "Usuário desativado")
     @PreAuthorize("@permService.can(authentication, T(com.jaasielsilva.helpdesk.enums.ModuloSistema).USUARIOS, T(com.jaasielsilva.helpdesk.enums.PermissaoAcao).EXCLUIR)")
     public ResponseEntity<ApiResponse<Void>> desativar(@PathVariable Long id, Authentication auth) {
         log.debug("DELETE /api/usuarios/{} por '{}'", id, auth.getName());

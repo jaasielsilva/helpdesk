@@ -4,6 +4,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
 import { AppShellComponent } from './core/layout/app-shell.component';
+import { AuditoriaComponent } from './features/auditoria/auditoria.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { EmpresasComponent } from './features/empresas/empresas.component';
 import { LoginComponent } from './features/login/login.component';
@@ -45,7 +46,7 @@ export const routes: Routes = [
       protectedRoute('relatorios', PlaceholderComponent, 'Relatórios'),
       protectedRoute('notificacoes', PlaceholderComponent, 'Notificações'),
       protectedRoute('mensagens', PlaceholderComponent, 'Mensagens'),
-      protectedRoute('auditoria', PlaceholderComponent, 'Auditoria'),
+      protectedRoute('auditoria', AuditoriaComponent, 'Auditoria'),
       protectedRoute('integracoes', PlaceholderComponent, 'Integrações'),
       protectedRoute('empresas', EmpresasComponent, 'Empresas'),
       protectedRoute('assinatura', PlaceholderComponent, 'Assinatura')

@@ -92,6 +92,12 @@
 			<artifactId>spring-boot-starter-cache</artifactId>
 		</dependency>
 
+		<!-- AOP — necessário para AuditoriaAspect -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-aop</artifactId>
+		</dependency>
+
 		<!-- Rate Limiting -->
 		<dependency>
 			<groupId>com.bucket4j</groupId>

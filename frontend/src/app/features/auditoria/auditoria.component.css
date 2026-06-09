@@ -1,0 +1,104 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Auditoria Component — Estilos específicos (HP2)
+───────────────────────────────────────────────────────────────────────────── */
+
+/* Slide-down para mensagens de validação */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideDown {
+  animation: slideDown 0.2s ease-out forwards;
+}
+
+/* Fade-in suave para as linhas da tabela */
+@keyframes fadeInRow {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.auditoria-table-container tbody tr {
+  animation: fadeInRow 0.18s ease-out both;
+}
+
+.auditoria-table-container tbody tr:nth-child(1)  { animation-delay: 0.02s; }
+.auditoria-table-container tbody tr:nth-child(2)  { animation-delay: 0.04s; }
+.auditoria-table-container tbody tr:nth-child(3)  { animation-delay: 0.06s; }
+.auditoria-table-container tbody tr:nth-child(4)  { animation-delay: 0.08s; }
+.auditoria-table-container tbody tr:nth-child(5)  { animation-delay: 0.10s; }
+.auditoria-table-container tbody tr:nth-child(n+6){ animation-delay: 0.12s; }
+
+/* Avatar do usuário */
+.auditoria-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+
+/* Badge adicional: purple (GERENCIAR) e red (EXCLUIR) — caso não existam no global */
+.badge-red {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.badge-purple {
+  background-color: #ede9fe;
+  color: #7c3aed;
+  border: 1px solid #ddd6fe;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+/* Spinner perfeito */
+.loading-spinner {
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Scroll suave na tabela em viewports pequenas */
+.auditoria-table-container {
+  scrollbar-width: thin;
+  scrollbar-color: #e2e8f0 transparent;
+}
+
+.auditoria-table-container::-webkit-scrollbar {
+  height: 4px;
+}
+
+.auditoria-table-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.auditoria-table-container::-webkit-scrollbar-thumb {
+  background-color: #e2e8f0;
+  border-radius: 9999px;
+}

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.jaasielsilva.helpdesk.config.Auditavel;
 import com.jaasielsilva.helpdesk.dto.ApiResponse;
 import com.jaasielsilva.helpdesk.dto.empresa.CreateEmpresaRequest;
 import com.jaasielsilva.helpdesk.dto.empresa.EmpresaCreateResponse;
@@ -38,6 +39,7 @@ public class EmpresaController {
     }
 
     @PostMapping
+    @Auditavel(modulo = com.jaasielsilva.helpdesk.enums.ModuloSistema.EMPRESAS, acao = com.jaasielsilva.helpdesk.enums.PermissaoAcao.CRIAR, descricao = "Empresa criada")
     @PreAuthorize("@permService.can(authentication, T(com.jaasielsilva.helpdesk.enums.ModuloSistema).EMPRESAS, T(com.jaasielsilva.helpdesk.enums.PermissaoAcao).CRIAR)")
     public ResponseEntity<ApiResponse<EmpresaCreateResponse>> criar(
             @Valid @RequestBody CreateEmpresaRequest request,
@@ -65,6 +67,7 @@ public class EmpresaController {
     }
 
     @PatchMapping("/{id}/status")
+    @Auditavel(modulo = com.jaasielsilva.helpdesk.enums.ModuloSistema.EMPRESAS, acao = com.jaasielsilva.helpdesk.enums.PermissaoAcao.EDITAR, descricao = "Status de empresa atualizado")
     @PreAuthorize("@permService.can(authentication, T(com.jaasielsilva.helpdesk.enums.ModuloSistema).EMPRESAS, T(com.jaasielsilva.helpdesk.enums.PermissaoAcao).EDITAR)")
     public ResponseEntity<ApiResponse<EmpresaResponse>> atualizarStatus(
             @PathVariable Long id,
