@@ -1,8 +1,9 @@
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
-import { Chamado, PageResponse } from '../../core/models/chamado';
+import { Chamado, ChamadoFiltros, PageResponse, STATUS_CHAMADO_LABELS, StatusChamado } from '../../core/models/chamado';
 import { AuthService } from '../../core/services/auth.service';
 import { ChamadoService } from '../../core/services/chamado.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -29,13 +30,49 @@ export class ChamadosComponent implements OnInit {
   totalElementos = 0;
   readonly tamanhoPagina = 10;
 
+  filtroStatus: StatusChamado | '' = '';
+  filtroBusca = '';
+  readonly statusLabels = STATUS_CHAMADO_LABELS;
+  readonly statusOpcoes: Array<{ valor: StatusChamado | ''; label: string }> = [
+    { valor: '', label: 'Todos' },
+    { valor: 'ABERTO', label: 'Aberto' },
+    { valor: 'EM_ATENDIMENTO', label: 'Em Atendimento' },
+    { valor: 'RESOLVIDO', label: 'Resolvido' },
+    { valor: 'FECHADO', label: 'Fechado' },
+  ];
+
   readonly form = this.formBuilder.nonNullable.group({
     titulo: ['', [Validators.required, Validators.minLength(3)]],
     descricao: ['', [Validators.required, Validators.minLength(10)]]
   });
 
+  readonly buscaControl = this.formBuilder.nonNullable.control('');
+
   ngOnInit(): void {
     this.carregar();
+    this.buscaControl.valueChanges.pipe(
+      debounceTime(400),
+      distinctUntilChanged()
+    ).subscribe(valor => {
+      this.filtroBusca = valor;
+      this.carregar(0);
+    });
+  }
+
+  filtrarPorStatus(status: StatusChamado | ''): void {
+    this.filtroStatus = status;
+    this.carregar(0);
+  }
+
+  limparFiltros(): void {
+    this.filtroStatus = '';
+    this.filtroBusca = '';
+    this.buscaControl.setValue('', { emitEvent: false });
+    this.carregar(0);
+  }
+
+  get temFiltroAtivo(): boolean {
+    return !!this.filtroStatus || !!this.filtroBusca;
   }
 
   salvar(): void {
@@ -52,8 +89,7 @@ export class ChamadosComponent implements OnInit {
 
     this.salvando = true;
     this.chamadoService.criar({ ...this.form.getRawValue(), usuarioId: usuario.id }).subscribe({
-      next: (chamado) => {
-        this.chamados = [chamado, ...this.chamados];
+      next: () => {
         this.form.reset();
         this.salvando = false;
         this.notificationService.success('Chamado criado com sucesso!', '✓ Sucesso');
@@ -76,7 +112,11 @@ export class ChamadosComponent implements OnInit {
 
   private carregar(pagina = 0): void {
     this.carregando = true;
-    this.chamadoService.listar(pagina, this.tamanhoPagina).subscribe({
+    const filtros: ChamadoFiltros = {
+      status: this.filtroStatus,
+      busca: this.filtroBusca
+    };
+    this.chamadoService.listar(pagina, this.tamanhoPagina, filtros).subscribe({
       next: (page: PageResponse<Chamado>) => {
         this.chamados = page.content;
         this.paginaAtual = page.page.number;

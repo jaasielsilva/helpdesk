@@ -38,16 +38,19 @@ public class ChamadoServiceImpl implements ChamadoService {
     private final UsuarioRepository usuarioRepository;
     private final TenantAccessService tenantAccessService;
     private final PermissaoService permissaoService;
+    private final ComentarioService comentarioService;
 
     public ChamadoServiceImpl(
             ChamadoRepository chamadoRepository,
             UsuarioRepository usuarioRepository,
             TenantAccessService tenantAccessService,
-            PermissaoService permissaoService) {
+            PermissaoService permissaoService,
+            ComentarioService comentarioService) {
         this.chamadoRepository = chamadoRepository;
         this.usuarioRepository = usuarioRepository;
         this.tenantAccessService = tenantAccessService;
         this.permissaoService = permissaoService;
+        this.comentarioService = comentarioService;
     }
 
     @Override
@@ -57,11 +60,8 @@ public class ChamadoServiceImpl implements ChamadoService {
         UsuarioAutenticado autenticado = UsuarioDetailsService.requireUsuarioAutenticado(auth);
         log.info("Criando chamado para usuário ID={} por '{}'", request.usuarioId(), auth.getName());
 
-        Usuario solicitante = autenticado.getUsuario();
-
         if (!autenticado.isSuperAdmin()) {
-            if (!solicitante.getId().equals(request.usuarioId())) {
-                log.warn("Usuário '{}' tentou criar chamado em nome do usuário ID={}", auth.getName(), request.usuarioId());
+            if (!autenticado.getUsuario().getId().equals(request.usuarioId())) {
                 throw new AccessDeniedException("Você só pode criar chamados em seu próprio nome");
             }
         }
@@ -114,7 +114,6 @@ public class ChamadoServiceImpl implements ChamadoService {
     public ChamadoResponse buscarPorId(Long id, Authentication auth) {
         UsuarioAutenticado autenticado = UsuarioDetailsService.requireUsuarioAutenticado(auth);
         log.debug("Buscando chamado ID={} por '{}'", id, auth.getName());
-
         Chamado chamado = buscarChamadoAtivo(id, autenticado);
         tenantAccessService.validateChamadoAccess(chamado, autenticado);
         return converterParaResponse(chamado);
@@ -140,22 +139,33 @@ public class ChamadoServiceImpl implements ChamadoService {
         if (request.descricao() != null && !request.descricao().isEmpty()) {
             chamado.setDescricao(request.descricao());
         }
-        if (request.status() != null) {
-            if (request.status() == StatusChamado.FECHADO && chamado.getDataFechamento() == null) {
+        if (request.status() != null && chamado.getStatus() != request.status()) {
+            StatusChamado novoStatus = request.status();
+            if (novoStatus == StatusChamado.FECHADO && chamado.getDataFechamento() == null) {
                 chamado.setDataFechamento(LocalDateTime.now());
             }
-            chamado.setStatus(request.status());
+            String evento = gerarMensagemEvento(chamado.getStatus(), novoStatus);
+            chamado.setStatus(novoStatus);
+            Chamado salvo = chamadoRepository.save(chamado);
+            comentarioService.adicionarEvento(salvo.getId(), evento, auth);
+            log.info("Chamado ID={} status alterado para {} por '{}'", id, novoStatus, auth.getName());
+            return converterParaResponse(salvo);
         }
         if (request.usuarioAtribuidoId() != null) {
-            Usuario usuarioAtribuido = usuarioRepository.findById(request.usuarioAtribuidoId())
-                    .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com ID: " + request.usuarioAtribuidoId()));
-            tenantAccessService.validateSameEmpresa(usuarioAtribuido);
-            chamado.setUsuarioAtribuido(usuarioAtribuido);
+            Usuario atribuido = usuarioRepository.findById(request.usuarioAtribuidoId())
+                    .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado: " + request.usuarioAtribuidoId()));
+            tenantAccessService.validateSameEmpresa(atribuido);
+            chamado.setUsuarioAtribuido(atribuido);
+            Chamado salvo = chamadoRepository.save(chamado);
+            String nomeAtribuido = atribuido.getNome() != null ? atribuido.getNome() : atribuido.getUsuario();
+            comentarioService.adicionarEvento(salvo.getId(), "👤 Chamado atribuído a " + nomeAtribuido, auth);
+            log.info("Chamado ID={} atribuído a '{}' por '{}'", id, nomeAtribuido, auth.getName());
+            return converterParaResponse(salvo);
         }
 
-        Chamado atualizado = chamadoRepository.save(chamado);
-        log.info("Chamado ID={} atualizado com sucesso por '{}'", id, auth.getName());
-        return converterParaResponse(atualizado);
+        Chamado salvo = chamadoRepository.save(chamado);
+        log.info("Chamado ID={} atualizado por '{}'", id, auth.getName());
+        return converterParaResponse(salvo);
     }
 
     @Override
@@ -163,26 +173,33 @@ public class ChamadoServiceImpl implements ChamadoService {
     public void deletar(Long id, Authentication auth) {
         permissaoService.require(auth, ModuloSistema.CHAMADOS, PermissaoAcao.EXCLUIR);
         UsuarioAutenticado autenticado = UsuarioDetailsService.requireUsuarioAutenticado(auth);
-
         log.info("Deletando chamado ID={} por '{}'", id, auth.getName());
-
         Chamado chamado = buscarChamadoAtivo(id, autenticado);
         tenantAccessService.validateChamadoAccess(chamado, autenticado);
-
         chamado.setDeletedAt(LocalDateTime.now());
         chamadoRepository.save(chamado);
         log.info("Chamado ID={} deletado (soft delete) por '{}'", id, auth.getName());
     }
 
+    // ── helpers ─────────────────────────────────────────────────────────────
+
+    private static String gerarMensagemEvento(StatusChamado de, StatusChamado para) {
+        return switch (para) {
+            case EM_ATENDIMENTO -> "🔧 Atendimento iniciado";
+            case RESOLVIDO      -> "✅ Chamado marcado como resolvido";
+            case FECHADO        -> "🔒 Chamado encerrado";
+            case ABERTO         -> "🔄 Chamado reaberto";
+        };
+    }
+
     private Chamado buscarChamadoAtivo(Long id, UsuarioAutenticado autenticado) {
         if (autenticado.isSuperAdmin()) {
             return chamadoRepository.findByIdActive(id)
-                    .orElseThrow(() -> new EntityNotFoundException("Chamado não encontrado com ID: " + id));
+                    .orElseThrow(() -> new EntityNotFoundException("Chamado não encontrado: " + id));
         }
-
         Long empresaId = tenantAccessService.requireEmpresaId();
         return chamadoRepository.findByIdActiveAndEmpresaId(id, empresaId)
-                .orElseThrow(() -> new EntityNotFoundException("Chamado não encontrado com ID: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Chamado não encontrado: " + id));
     }
 
     private ChamadoResponse converterParaResponse(Chamado chamado) {

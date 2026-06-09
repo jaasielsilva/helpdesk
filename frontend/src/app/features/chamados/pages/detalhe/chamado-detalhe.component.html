@@ -1,0 +1,285 @@
+<div class="space-y-6 animate-fade-in">
+
+  @if (carregando) {
+    <div class="py-16 flex flex-col items-center justify-center gap-3 text-slate-400">
+      <span class="w-8 h-8 border-2 border-slate-200 border-t-violet-500 rounded-full animate-spin block"></span>
+      <span class="text-xs font-semibold uppercase tracking-wider">Carregando chamado...</span>
+    </div>
+  } @else if (chamado) {
+
+    <!-- Navegação -->
+    <div class="flex items-center gap-2 text-sm text-slate-500">
+      <a routerLink="/chamados" class="hover:text-violet-600 transition-colors">← Voltar para lista</a>
+    </div>
+
+    <!-- Cabeçalho -->
+    <section class="panel bg-white border border-slate-100 rounded-2xl p-6 shadow-premium">
+      <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <div class="flex-1">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="text-xl font-bold text-slate-400">#{{ chamado.id }}</span>
+            <app-chamado-status-badge [status]="chamado.status" />
+          </div>
+          <h1 class="text-2xl font-bold text-slate-800 mb-3">{{ chamado.titulo }}</h1>
+          <div class="flex flex-wrap items-center gap-3 text-xs text-slate-400 font-medium">
+            <span>Criado {{ chamado.dataCriacao | date:'dd/MM/yyyy HH:mm' }}</span>
+            <span>·</span>
+            <span>Atualizado {{ chamado.dataAtualizacao | date:'dd/MM/yyyy HH:mm' }}</span>
+            @if (chamado.dataFechamento) {
+              <span>·</span>
+              <span class="text-green-600 font-semibold">Fechado {{ chamado.dataFechamento | date:'dd/MM/yyyy HH:mm' }}</span>
+            }
+          </div>
+        </div>
+
+        <!-- Ações de cabeçalho -->
+        <div class="flex flex-wrap gap-2">
+          @if (podeEditar && chamado.status !== 'FECHADO') {
+            <button type="button" class="btn-secondary px-4 py-2 text-sm" (click)="mostrarFormEdicao = true">
+              ✏️ Editar
+            </button>
+          }
+          @if (podeExcluir) {
+            @if (!confirmandoDelete) {
+              <button type="button" class="btn-secondary px-4 py-2 text-sm text-rose-600 border-rose-200 hover:bg-rose-50" (click)="confirmandoDelete = true">
+                🗑️ Excluir
+              </button>
+            } @else {
+              <button type="button" class="btn-secondary px-3 py-2 text-xs" (click)="confirmandoDelete = false">Cancelar</button>
+              <button type="button" class="btn-primary px-3 py-2 text-xs" style="background: #ef4444" (click)="deletar()">Confirmar exclusão</button>
+            }
+          }
+        </div>
+      </div>
+
+      <!-- Stepper de fluxo -->
+      <div class="mt-6 pt-5 border-t border-slate-100">
+        <div class="flex items-center gap-0">
+          @for (step of [
+            { status: 'ABERTO',          icon: '📬', label: 'Aberto' },
+            { status: 'EM_ATENDIMENTO',  icon: '🔧', label: 'Em Atendimento' },
+            { status: 'RESOLVIDO',       icon: '✅', label: 'Resolvido' },
+            { status: 'FECHADO',         icon: '🔒', label: 'Fechado' }
+          ]; track step.status; let last = $last) {
+            <div class="flex items-center flex-1 min-w-0">
+              <div class="flex flex-col items-center gap-1 min-w-0">
+                <div
+                  class="step-dot"
+                  [class.step-dot--done]="isStepDone(chamado.status, step.status)"
+                  [class.step-dot--active]="chamado.status === step.status"
+                >
+                  {{ step.icon }}
+                </div>
+                <span class="text-[10px] font-semibold text-center leading-tight"
+                  [class.text-violet-600]="chamado.status === step.status"
+                  [class.text-green-600]="isStepDone(chamado.status, step.status) && chamado.status !== step.status"
+                  [class.text-slate-400]="!isStepDone(chamado.status, step.status) && chamado.status !== step.status"
+                >
+                  {{ step.label }}
+                </span>
+              </div>
+              @if (!last) {
+                <div class="step-connector flex-1 mx-2 mb-4"
+                  [class.step-connector--done]="isStepDone(chamado.status, step.status)"
+                ></div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
+
+      <!-- Corpo: Descrição -->
+      <section class="panel bg-white border border-slate-100 rounded-2xl p-6 shadow-premium">
+        <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Descrição</h2>
+        <div class="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{{ chamado.descricao }}</div>
+      </section>
+
+      <!-- Painel lateral -->
+      <aside class="space-y-4">
+
+        <!-- BLOCO DE AÇÃO PRINCIPAL — muda conforme o status -->
+        @if (chamado.status !== 'FECHADO') {
+          <section class="panel bg-white border border-slate-100 rounded-2xl p-5 shadow-premium">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Próxima ação</h3>
+
+            <!-- ABERTO: precisa ser atribuído primeiro -->
+            @if (chamado.status === 'ABERTO') {
+              @if (!chamado.usuarioAtribuidoId && podeAtribuir) {
+                <div class="rounded-lg bg-amber-50 border border-amber-200 p-4 mb-3">
+                  <p class="text-xs font-semibold text-amber-700 mb-1">⚠️ Não atribuído</p>
+                  <p class="text-xs text-amber-600">Atribua o chamado antes de iniciar o atendimento.</p>
+                </div>
+                <button type="button" class="btn-primary w-full py-2.5 text-sm" [disabled]="processando" (click)="atribuirAMim()">
+                  👤 Atribuir a mim e iniciar
+                </button>
+              } @else if (podeIniciarAtendimento) {
+                <button type="button" class="btn-primary w-full py-2.5 text-sm" [disabled]="processando" (click)="iniciarAtendimento()">
+                  {{ processando ? 'Processando...' : '🔧 Iniciar atendimento' }}
+                </button>
+              } @else if (chamado.usuarioAtribuidoId && !podeAtribuir) {
+                <p class="text-xs text-slate-400 text-center py-2">Aguardando atribuição de um agente.</p>
+              }
+            }
+
+            <!-- EM_ATENDIMENTO: resolver -->
+            @if (chamado.status === 'EM_ATENDIMENTO' && podeResolver) {
+              <button
+                type="button"
+                class="btn-primary w-full py-2.5 text-sm"
+                style="background: linear-gradient(135deg, #10b981, #059669)"
+                [disabled]="processando"
+                (click)="mostrarModalResolucao = true"
+              >
+                ✅ Marcar como resolvido
+              </button>
+            }
+
+            <!-- RESOLVIDO: fechar (confirmação do solicitante ou ADMIN) -->
+            @if (chamado.status === 'RESOLVIDO' && podeFechar) {
+              <div class="rounded-lg bg-green-50 border border-green-200 p-4 mb-3">
+                <p class="text-xs font-semibold text-green-700 mb-1">✅ Solução aplicada</p>
+                <p class="text-xs text-green-600">
+                  @if (isProprietario) {
+                    O problema foi resolvido? Confirme para fechar o chamado.
+                  } @else {
+                    Aguardando confirmação do solicitante ou fechamento manual.
+                  }
+                </p>
+              </div>
+              @if (!confirmandoFechar) {
+                <button type="button" class="btn-primary w-full py-2.5 text-sm" (click)="confirmandoFechar = true">
+                  🔒 {{ isProprietario ? 'Confirmar e fechar' : 'Fechar chamado' }}
+                </button>
+              } @else {
+                <div class="space-y-2">
+                  <p class="text-xs text-slate-600 text-center font-medium">Confirma o fechamento?</p>
+                  <div class="flex gap-2">
+                    <button type="button" class="btn-secondary flex-1 py-2 text-sm" (click)="confirmandoFechar = false">Não</button>
+                    <button type="button" class="btn-primary flex-1 py-2 text-sm" [disabled]="processando" (click)="fecharChamado()">
+                      {{ processando ? '...' : 'Sim, fechar' }}
+                    </button>
+                  </div>
+                </div>
+              }
+            }
+
+            <!-- Reabrir -->
+            @if (podeReabrir) {
+              <div class="mt-3 pt-3 border-t border-slate-100">
+                @if (!confirmandoReabrir) {
+                  <button type="button" class="btn-secondary w-full py-2 text-xs text-slate-500" (click)="confirmandoReabrir = true">
+                    🔄 Reabrir chamado
+                  </button>
+                } @else {
+                  <div class="space-y-2">
+                    <p class="text-xs text-slate-600 text-center font-medium">Reabrir este chamado?</p>
+                    <div class="flex gap-2">
+                      <button type="button" class="btn-secondary flex-1 py-2 text-xs" (click)="confirmandoReabrir = false">Não</button>
+                      <button type="button" class="btn-primary flex-1 py-2 text-xs" [disabled]="processando" (click)="reabrir()">
+                        {{ processando ? '...' : 'Sim, reabrir' }}
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </section>
+        }
+
+        <!-- Chamado fechado: banner e reabrir -->
+        @if (chamado.status === 'FECHADO') {
+          <section class="panel border border-slate-100 rounded-2xl p-5 shadow-premium" style="background: #f0fdf4">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="text-2xl">🔒</span>
+              <div>
+                <p class="text-sm font-bold text-green-800">Chamado encerrado</p>
+                <p class="text-xs text-green-600">Fechado em {{ chamado.dataFechamento | date:'dd/MM/yyyy HH:mm' }}</p>
+              </div>
+            </div>
+            @if (podeReabrir) {
+              @if (!confirmandoReabrir) {
+                <button type="button" class="btn-secondary w-full py-2 text-xs" (click)="confirmandoReabrir = true">
+                  🔄 Reabrir chamado
+                </button>
+              } @else {
+                <div class="space-y-2">
+                  <p class="text-xs text-slate-600 text-center font-medium">Reabrir este chamado?</p>
+                  <div class="flex gap-2">
+                    <button type="button" class="btn-secondary flex-1 py-2 text-xs" (click)="confirmandoReabrir = false">Não</button>
+                    <button type="button" class="btn-primary flex-1 py-2 text-xs" [disabled]="processando" (click)="reabrir()">
+                      {{ processando ? '...' : 'Sim, reabrir' }}
+                    </button>
+                  </div>
+                </div>
+              }
+            }
+          </section>
+        }
+
+        <!-- Solicitante -->
+        <section class="panel bg-white border border-slate-100 rounded-2xl p-5 shadow-premium">
+          <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Solicitante</h3>
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+              {{ chamado.usuarioNome | slice:0:1 | uppercase }}
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-slate-800">{{ chamado.usuarioNome }}</p>
+              <p class="text-xs text-slate-400">ID {{ chamado.usuarioId }}</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Atribuído -->
+        <section class="panel bg-white border border-slate-100 rounded-2xl p-5 shadow-premium">
+          <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Atribuído a</h3>
+          @if (chamado.usuarioAtribuidoNome) {
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                {{ chamado.usuarioAtribuidoNome | slice:0:1 | uppercase }}
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-slate-800">{{ chamado.usuarioAtribuidoNome }}</p>
+                <p class="text-xs text-slate-400">ID {{ chamado.usuarioAtribuidoId }}</p>
+              </div>
+            </div>
+            @if (podeAtribuir && chamado.status !== 'FECHADO') {
+              <button type="button" class="btn-secondary w-full py-2 text-xs mt-3" [disabled]="processando" (click)="atribuirAMim()">
+                Reatribuir a mim
+              </button>
+            }
+          } @else {
+            <p class="text-sm text-slate-400 mb-3">Não atribuído</p>
+            @if (podeAtribuir && chamado.status !== 'FECHADO') {
+              <button type="button" class="btn-secondary w-full py-2 text-sm" [disabled]="processando" (click)="atribuirAMim()">
+                👤 Atribuir a mim
+              </button>
+            }
+          }
+        </section>
+
+      </aside>
+    </div>
+
+  }
+</div>
+
+<!-- Modais -->
+@if (mostrarFormEdicao && chamado) {
+  <app-chamado-form
+    [chamado]="chamado"
+    (fechar)="mostrarFormEdicao = false"
+    (salvo)="aoSalvarEdicao($event)"
+  />
+}
+
+@if (mostrarModalResolucao && chamado) {
+  <app-chamado-resolucao-modal
+    [chamado]="chamado"
+    (fechar)="mostrarModalResolucao = false"
+    (resolvido)="aoResolvido($event)"
+  />
+}

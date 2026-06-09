@@ -1,0 +1,115 @@
+<div class="timeline-wrap">
+
+  <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-5">
+    💬 Timeline do chamado
+    @if (comentarios.length > 0) {
+      <span class="ml-2 text-slate-400 font-normal normal-case">({{ comentarios.length }})</span>
+    }
+  </h2>
+
+  @if (carregando) {
+    <div class="py-8 flex items-center justify-center gap-2 text-slate-400">
+      <span class="w-5 h-5 border-2 border-slate-200 border-t-violet-500 rounded-full animate-spin block"></span>
+      <span class="text-xs">Carregando timeline...</span>
+    </div>
+  } @else {
+
+    <div class="timeline-list">
+      @if (comentarios.length === 0) {
+        <div class="py-8 text-center text-slate-400">
+          <p class="text-2xl mb-2">💬</p>
+          <p class="text-sm">Nenhuma atualização ainda.</p>
+          <p class="text-xs mt-1">Seja o primeiro a comentar.</p>
+        </div>
+      }
+
+      @for (item of comentarios; track item.id) {
+
+        <!-- Evento de sistema -->
+        @if (isEvento(item)) {
+          <div class="timeline-event">
+            <div class="timeline-event-dot"></div>
+            <div class="timeline-event-content">
+              <span class="text-sm text-slate-600 font-medium">{{ item.conteudo }}</span>
+              <span class="timeline-meta">{{ item.dataCriacao | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+          </div>
+
+        <!-- Comentário -->
+        } @else {
+          <div class="timeline-comment" [class.timeline-comment--proprio]="isProprioUsuario(item)" [class.timeline-comment--interno]="item.interno">
+            <div class="timeline-avatar" [class.timeline-avatar--staff]="item.autorPerfil !== 'USER'">
+              {{ avatarLabel(item.autorNome) }}
+            </div>
+            <div class="timeline-bubble" [class.timeline-bubble--proprio]="isProprioUsuario(item)" [class.timeline-bubble--interno]="item.interno">
+              <div class="timeline-bubble-header">
+                <span class="font-semibold text-sm text-slate-800">{{ item.autorNome }}</span>
+                @if (item.interno) {
+                  <span class="badge badge-yellow text-[10px] ml-2">🔒 Nota interna</span>
+                }
+                @if (item.autorPerfil && item.autorPerfil !== 'USER') {
+                  <span class="badge badge-blue text-[10px] ml-1">{{ item.autorPerfil }}</span>
+                }
+                <span class="timeline-meta ml-auto">{{ item.dataCriacao | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <p class="text-sm text-slate-700 leading-relaxed mt-1 whitespace-pre-wrap">{{ item.conteudo }}</p>
+            </div>
+          </div>
+        }
+
+      }
+    </div>
+
+    <!-- Caixa de envio -->
+    @if (!fechado) {
+      <div class="timeline-reply mt-6">
+
+        <!-- Tabs público / interno -->
+        @if (isTenantStaff) {
+          <div class="flex gap-1 mb-3">
+            <button type="button" class="reply-tab" [class.reply-tab--active]="!modoInterno" (click)="modoInterno = false">
+              💬 Resposta pública
+            </button>
+            <button type="button" class="reply-tab" [class.reply-tab--active]="modoInterno" (click)="modoInterno = true">
+              🔒 Nota interna
+            </button>
+          </div>
+        }
+
+        @if (modoInterno) {
+          <div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 mb-3">
+            <p class="text-xs text-amber-700 font-semibold">🔒 Nota interna — visível apenas para agentes</p>
+          </div>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="enviar()">
+          <div class="flex items-start gap-3">
+            <div class="timeline-avatar timeline-avatar--self flex-shrink-0">
+              {{ avatarLabel(auth.usuarioAtual?.nome || auth.usuarioAtual?.usuario || '?') }}
+            </div>
+            <div class="flex-1">
+              <textarea
+                formControlName="conteudo"
+                rows="3"
+                class="input-field resize-none text-sm"
+                [class.border-amber-300]="modoInterno"
+                [placeholder]="modoInterno ? 'Escreva uma nota interna para a equipe...' : 'Escreva uma resposta ou atualização...'"
+              ></textarea>
+              <div class="flex justify-end mt-2">
+                <button
+                  type="submit"
+                  class="btn-primary px-5 py-2 text-sm"
+                  [disabled]="form.invalid || enviando"
+                  [style.background]="modoInterno ? 'linear-gradient(135deg, #f59e0b, #d97706)' : ''"
+                >
+                  {{ enviando ? 'Enviando...' : (modoInterno ? '🔒 Salvar nota' : '💬 Enviar') }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    }
+  }
+
+</div>

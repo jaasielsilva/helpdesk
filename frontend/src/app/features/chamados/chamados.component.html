@@ -102,6 +102,50 @@
           </p>
         </div>
       </div>
+
+      <!-- Filtros -->
+      <div class="mt-4 flex flex-col sm:flex-row gap-3">
+        <!-- Busca por texto -->
+        <div class="relative flex-1">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+          <input
+            type="text"
+            [formControl]="buscaControl"
+            placeholder="Buscar por título ou descrição..."
+            class="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-opacity-20 focus:border-brand-500 transition-all"
+          />
+        </div>
+
+        <!-- Botões de status -->
+        <div class="flex flex-wrap gap-1.5">
+          @for (opcao of statusOpcoes; track opcao.valor) {
+            <button
+              type="button"
+              (click)="filtrarPorStatus(opcao.valor)"
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all"
+              [class.bg-brand-600]="filtroStatus === opcao.valor"
+              [class.text-white]="filtroStatus === opcao.valor"
+              [class.border-brand-600]="filtroStatus === opcao.valor"
+              [class.bg-white]="filtroStatus !== opcao.valor"
+              [class.text-slate-600]="filtroStatus !== opcao.valor"
+              [class.border-slate-200]="filtroStatus !== opcao.valor"
+              [class.hover:border-brand-400]="filtroStatus !== opcao.valor"
+            >
+              {{ opcao.label }}
+            </button>
+          }
+
+          @if (temFiltroAtivo) {
+            <button
+              type="button"
+              (click)="limparFiltros()"
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-rose-200 text-rose-500 bg-white hover:bg-rose-50 transition-all"
+            >
+              ✕ Limpar
+            </button>
+          }
+        </div>
+      </div>
     </div>
 
     <!-- Estado: Carregando -->

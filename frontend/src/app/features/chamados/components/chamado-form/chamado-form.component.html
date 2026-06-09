@@ -1,0 +1,56 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" (click)="fechar.emit()">
+  <div class="panel w-full max-w-lg p-6 bg-white" (click)="$event.stopPropagation()">
+
+    <div class="border-b border-slate-100 pb-4 mb-5">
+      <h3 class="text-lg font-bold text-slate-800">
+        {{ modoEdicao ? '✏️ Editar Chamado' : '🆘 Registrar Chamado' }}
+      </h3>
+      <p class="text-xs text-slate-500 mt-1">
+        {{ modoEdicao ? 'Atualize o título ou descrição do chamado.' : 'Abra uma nova solicitação técnica para atendimento.' }}
+      </p>
+    </div>
+
+    <form class="space-y-4" [formGroup]="form" (ngSubmit)="salvar()">
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Título <span class="text-rose-500">*</span>
+        </label>
+        <input
+          type="text"
+          formControlName="titulo"
+          class="input-field"
+          [class.border-rose-500]="invalido('titulo')"
+          placeholder="Ex: Erro no acesso ao ERP corporativo"
+        />
+        @if (invalido('titulo')) {
+          <p class="text-xs text-rose-500 mt-1 animate-slideDown">⚠️ Título obrigatório (mín. 3 caracteres).</p>
+        }
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Descrição <span class="text-rose-500">*</span>
+        </label>
+        <textarea
+          formControlName="descricao"
+          rows="5"
+          class="input-field resize-none"
+          [class.border-rose-500]="invalido('descricao')"
+          placeholder="Descreva o problema ou solicitação em detalhes..."
+        ></textarea>
+        @if (invalido('descricao')) {
+          <p class="text-xs text-rose-500 mt-1 animate-slideDown">⚠️ Descrição obrigatória (mín. 10 caracteres).</p>
+        }
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="button" class="btn-secondary flex-1 py-2.5" (click)="fechar.emit()">Cancelar</button>
+        <button type="submit" class="btn-primary flex-1 py-2.5" [disabled]="salvando">
+          {{ salvando ? 'Salvando...' : (modoEdicao ? 'Salvar alterações' : 'Abrir chamado') }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

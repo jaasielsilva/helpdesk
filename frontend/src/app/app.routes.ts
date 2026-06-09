@@ -4,7 +4,6 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
 import { AppShellComponent } from './core/layout/app-shell.component';
-import { ChamadosComponent } from './features/chamados/chamados.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { EmpresasComponent } from './features/empresas/empresas.component';
 import { LoginComponent } from './features/login/login.component';
@@ -29,7 +28,13 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       protectedRoute('dashboard', DashboardComponent, 'Dashboard'),
-      protectedRoute('chamados', ChamadosComponent, 'Chamados'),
+      {
+        path: 'chamados',
+        canActivate: [roleGuard],
+        data: { title: 'Chamados' },
+        loadChildren: () =>
+          import('./features/chamados/chamados.routes').then((m) => m.CHAMADOS_ROUTES)
+      },
       protectedRoute('categorias', PlaceholderComponent, 'Categorias'),
       protectedRoute('sla', PlaceholderComponent, 'SLA'),
       protectedRoute('equipes', PlaceholderComponent, 'Equipes'),

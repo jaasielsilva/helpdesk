@@ -1,0 +1,138 @@
+<div class="space-y-6 animate-fade-in">
+
+  <!-- Header -->
+  <section class="panel bg-white border border-slate-100 rounded-2xl p-6 shadow-premium">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">📋 Chamados</h2>
+        <p class="text-xs text-slate-500 mt-1">
+          Gestão e acompanhamento da fila de atendimento.
+          @if (totalElementos > 0) {
+            <span class="font-bold text-brand-600">({{ totalElementos }} no total)</span>
+          }
+        </p>
+      </div>
+      @if (podeCriar) {
+        <button type="button" class="btn-primary px-4 py-2.5 text-sm" (click)="mostrarForm = true">
+          + Novo Chamado
+        </button>
+      }
+    </div>
+
+    <!-- Tabs de status -->
+    <div class="flex flex-wrap gap-2 mb-5">
+      @for (tab of tabs; track tab.status) {
+        <button
+          type="button"
+          class="tab-btn"
+          [class.tab-btn--active]="tabAtiva === tab.status"
+          (click)="selecionarTab(tab.status)"
+        >
+          {{ tab.label }}
+          @if (tab.count > 0) {
+            <span class="tab-count" [class.tab-count--active]="tabAtiva === tab.status">
+              {{ tab.count }}
+            </span>
+          }
+        </button>
+      }
+    </div>
+
+    <!-- Filtros -->
+    <app-chamado-filtros (filtrosChange)="onFiltrosChange($event)" />
+  </section>
+
+  <!-- Tabela -->
+  <section class="panel bg-white border border-slate-100 rounded-2xl p-6 shadow-premium">
+
+    @if (carregando) {
+      <div class="py-16 flex flex-col items-center justify-center gap-3 text-slate-400">
+        <span class="w-8 h-8 border-2 border-slate-200 border-t-violet-500 rounded-full animate-spin block"></span>
+        <span class="text-xs font-semibold uppercase tracking-wider">Carregando chamados...</span>
+      </div>
+    } @else if (chamados.length === 0) {
+      <div class="py-20 text-center text-slate-400">
+        <span class="text-4xl block mb-3">📂</span>
+        <p class="text-sm font-medium">Nenhum chamado encontrado.</p>
+        <p class="text-xs text-slate-400 mt-1">Tente ajustar os filtros ou abra um novo chamado.</p>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="w-16">ID</th>
+              <th>Título</th>
+              <th>Status</th>
+              <th>Solicitante</th>
+              <th>Atribuído</th>
+              <th class="text-right">Criado em</th>
+              <th class="w-20">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (chamado of chamados; track chamado.id) {
+              <tr class="cursor-pointer" (click)="abrirChamado(chamado.id)">
+                <td class="font-bold text-slate-400 text-xs">#{{ chamado.id }}</td>
+                <td>
+                  <strong class="text-slate-700 font-semibold block text-sm">{{ chamado.titulo }}</strong>
+                  <p class="text-xs text-slate-400 mt-0.5 max-w-[360px] truncate">{{ chamado.descricao }}</p>
+                </td>
+                <td>
+                  <app-chamado-status-badge [status]="chamado.status" />
+                </td>
+                <td class="text-sm text-slate-600">{{ chamado.usuarioNome || '—' }}</td>
+                <td class="text-sm text-slate-500">
+                  @if (chamado.usuarioAtribuidoNome) {
+                    <span class="inline-flex items-center gap-1">
+                      <span class="w-5 h-5 rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                        {{ chamado.usuarioAtribuidoNome | slice:0:1 | uppercase }}
+                      </span>
+                      {{ chamado.usuarioAtribuidoNome }}
+                    </span>
+                  } @else {
+                    <span class="text-slate-300">Não atribuído</span>
+                  }
+                </td>
+                <td class="text-right text-xs text-slate-400 font-medium">
+                  {{ chamado.dataCriacao | date:'dd/MM/yy HH:mm' }}
+                </td>
+                <td (click)="$event.stopPropagation()">
+                  <button
+                    type="button"
+                    class="btn-secondary px-3 py-1.5 text-xs"
+                    (click)="abrirChamado(chamado.id)"
+                  >
+                    Ver
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (totalPaginas > 1) {
+        <nav class="pagination-bar mt-6 flex items-center justify-center gap-2" aria-label="Paginação">
+          <button class="pagination-btn flex items-center justify-center" [disabled]="paginaAtual === 0" (click)="irParaPagina(paginaAtual - 1)" aria-label="Anterior">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          @for (p of paginas; track p) {
+            <button class="pagination-btn" [class.active]="p === paginaAtual" (click)="irParaPagina(p)">{{ p + 1 }}</button>
+          }
+          <button class="pagination-btn flex items-center justify-center" [disabled]="paginaAtual === totalPaginas - 1" (click)="irParaPagina(paginaAtual + 1)" aria-label="Próxima">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </nav>
+      }
+    }
+  </section>
+</div>
+
+@if (mostrarForm) {
+  <app-chamado-form
+    [chamado]="null"
+    (fechar)="mostrarForm = false"
+    (salvo)="aoSalvar($event)"
+  />
+}

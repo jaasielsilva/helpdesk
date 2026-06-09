@@ -1,6 +1,6 @@
 import { UserRole } from '../models/user-role';
 
-export type PermissionAction = 'VISUALIZAR' | 'CRIAR' | 'EDITAR' | 'EXCLUIR' | 'GERENCIAR';
+export type PermissionAction = 'VISUALIZAR' | 'CRIAR' | 'ATENDER' | 'ATRIBUIR' | 'EDITAR' | 'EXCLUIR' | 'GERENCIAR';
 
 export type SystemModule =
   | 'DASHBOARD'
@@ -22,12 +22,12 @@ export type SystemModule =
 
 type PermissionMatrix = Record<SystemModule, PermissionAction[]>;
 
-const ALL: PermissionAction[] = ['VISUALIZAR', 'CRIAR', 'EDITAR', 'EXCLUIR', 'GERENCIAR'];
+const ALL: PermissionAction[] = ['VISUALIZAR', 'CRIAR', 'ATENDER', 'ATRIBUIR', 'EDITAR', 'EXCLUIR', 'GERENCIAR'];
 const VIS: PermissionAction[] = ['VISUALIZAR'];
 const VIS_CRIAR: PermissionAction[] = ['VISUALIZAR', 'CRIAR'];
-const VIS_CRIAR_EDITAR: PermissionAction[] = ['VISUALIZAR', 'CRIAR', 'EDITAR'];
+const VIS_CRIAR_ATENDER: PermissionAction[] = ['VISUALIZAR', 'CRIAR', 'ATENDER', 'ATRIBUIR', 'EDITAR'];
 const VIS_EDITAR: PermissionAction[] = ['VISUALIZAR', 'EDITAR'];
-const GERENCIAR: PermissionAction[] = ['VISUALIZAR', 'CRIAR', 'EDITAR', 'EXCLUIR', 'GERENCIAR'];
+const GERENCIAR: PermissionAction[] = ['VISUALIZAR', 'CRIAR', 'ATENDER', 'ATRIBUIR', 'EDITAR', 'EXCLUIR', 'GERENCIAR'];
 
 const USER_MATRIX: PermissionMatrix = {
   DASHBOARD: VIS,
@@ -50,7 +50,7 @@ const USER_MATRIX: PermissionMatrix = {
 
 const SUPORTE_MATRIX: PermissionMatrix = {
   ...USER_MATRIX,
-  CHAMADOS: VIS_CRIAR_EDITAR,
+  CHAMADOS: VIS_CRIAR_ATENDER,
   EQUIPES: VIS,
   CATEGORIAS: VIS_EDITAR,
   SLA: VIS_EDITAR,
