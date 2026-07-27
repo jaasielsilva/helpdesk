@@ -1,5 +1,7 @@
 package com.jaasielsilva.helpdesk.service;
 
+import java.time.LocalDateTime;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -112,6 +114,10 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
         if (request.ativo() != null) {
             usuario.setAtivo(request.ativo());
+            // ao reativar, limpar o soft-delete para o usuário voltar a aparecer nas queries
+            if (Boolean.TRUE.equals(request.ativo())) {
+                usuario.setDeletedAt(null);
+            }
         }
         if (request.senha() != null && !request.senha().isBlank()) {
             usuario.setSenha(passwordEncoder.encode(request.senha().trim()));
@@ -125,7 +131,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         permissaoService.require(auth, ModuloSistema.USUARIOS, PermissaoAcao.EXCLUIR);
         Usuario usuario = findAccessibleUser(id, auth);
         usuario.setAtivo(false);
-        usuario.setDeletedAt(java.time.LocalDateTime.now());
+        usuario.setDeletedAt(LocalDateTime.now());
         usuarioRepository.save(usuario);
         log.info("Usuário ID={} desativado", id);
     }
@@ -169,11 +175,6 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
         if (!autenticado.isSuperAdmin() && perfil == PerfilUsuario.ADMIN) {
             throw new AccessDeniedException("ADMIN do tenant não pode criar outro ADMIN");
-        }
-        if (!autenticado.isSuperAdmin()
-                && perfil != PerfilUsuario.SUPORTE
-                && perfil != PerfilUsuario.USER) {
-            throw new AccessDeniedException("Perfil não permitido");
         }
     }
 

@@ -12,6 +12,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.jaasielsilva.helpdesk.model.Usuario;
 import com.jaasielsilva.helpdesk.repository.UsuarioRepository;
+import com.jaasielsilva.helpdesk.tenant.TenantContext;
+import com.jaasielsilva.helpdesk.tenant.TenantContextHolder;
 
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -58,13 +60,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             principal, null, principal.getAuthorities());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                    TenantContextHolder.set(new TenantContext(
+                            usuario.getId(),
+                            usuario.getEmpresa() != null ? usuario.getEmpresa().getId() : null,
+                            usuario.getPerfil(),
+                            usuario.isSuperAdmin()));
                 }
             } catch (JwtException | NumberFormatException ex) {
                 log.debug("Token JWT inválido: {}", ex.getMessage());
             }
         }
 
-        filterChain.doFilter(request, response);
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            TenantContextHolder.clear();
+        }
     }
 
     private String extrairToken(HttpServletRequest request) {
